@@ -8,7 +8,7 @@ terraform {
 
 provider "keboola" {
   host  = "https://connection.north-europe.azure.keboola.com"
-  token = ""
+  token = "xxx"
 }
 
 //data "keboola_example" "example" {}

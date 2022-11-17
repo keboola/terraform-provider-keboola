@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/client"
 	"github.com/keboola/go-client/pkg/storageapi"
 )
@@ -61,6 +62,7 @@ func (p *keboolaProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 
 // Configure prepares a Keboola API client for data sources and resources.
 func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	tflog.Info(ctx, "Configuring Keboola API client")
 	// Retrieve provider data from configuration
 	var config keboolaProviderModel
 	diags := req.Config.Get(ctx, &config)
@@ -134,6 +136,10 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 		return
 	}
 
+	ctx = tflog.SetField(ctx, "keboola_host", host)
+	ctx = tflog.SetField(ctx, "hashicups_token", token)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "hashicups_token")
+
 	// Create a new Keboola Storage api client using the configuration values
 	sapiClient := storageapi.ClientWithHostAndToken(client.New(), host, token)
 
@@ -141,6 +147,8 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// type Configure methods.
 	resp.DataSourceData = sapiClient
 	resp.ResourceData = sapiClient
+
+	tflog.Info(ctx, "Configured Keboola API client", map[string]any{"success": true})
 }
 
 // DataSources defines the data sources implemented in the provider.
