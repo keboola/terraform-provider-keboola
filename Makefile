@@ -14,3 +14,12 @@ testacc:
 
 test-install: install
 	terraform -chdir="./examples/provider-install-verification" plan
+test-create: install
+	terraform -chdir="./examples/config" plan
+	terraform -chdir="./examples/config" apply -auto-approve
+
+test-update: install
+	terraform -chdir="./examples/config" plan
+	terraform -chdir="./examples/config" apply -auto-approve
+test-destroy: install
+	terraform -chdir="./examples/config" apply -destroy -auto-approve
