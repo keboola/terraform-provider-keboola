@@ -29,7 +29,7 @@ func New() provider.Provider {
 	return &keboolaProvider{}
 }
 
-// hashicupsProvider is the provider implementation.
+// keboolaProvider is the provider implementation.
 type keboolaProvider struct{}
 
 // keboolaProviderModel maps provider schema data to a Go type.
@@ -112,12 +112,11 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
-
 	if host == "" {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
 			"Missing Keboola API Host",
-			"The provider cannot create the HashiCups API client as there is a missing or empty value for the Keboola API host. "+
+			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API host. "+
 				"Set the host value in the configuration or use the "+KBC_HOST+" environment variable. "+
 				"If either is already set, ensure the value is not empty.",
 		)
