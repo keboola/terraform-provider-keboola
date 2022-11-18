@@ -50,11 +50,12 @@ func (p *keboolaProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 			"host": {
 				Type:     types.StringType,
 				Required: true,
+				Optional: true,
 			},
 			"token": {
 				Type:      types.StringType,
 				Sensitive: true,
-				Required:  true,
+				Optional:  true,
 			},
 		},
 	}, nil
@@ -124,10 +125,10 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	if token == "" {
 		resp.Diagnostics.AddAttributeError(
-			path.Root("username"),
-			"Missing HashiCups API Username",
+			path.Root("token"),
+			"Missing Keboola API token",
 			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API token. "+
-				"Set the username value in the configuration or use the "+KBC_TOKEN+" environment variable. "+
+				"Set the token value in the configuration or use the "+KBC_TOKEN+" environment variable. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
@@ -137,16 +138,16 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	}
 
 	ctx = tflog.SetField(ctx, "keboola_host", host)
-	ctx = tflog.SetField(ctx, "hashicups_token", token)
-	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "hashicups_token")
+	ctx = tflog.SetField(ctx, "keboola_token", token)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "keboola_token")
 
 	// Create a new Keboola Storage api client using the configuration values
 	sapiClient := storageapi.ClientWithHostAndToken(client.New(), host, token)
 
 	// Make the Keboola client available during DataSource and Resource
 	// type Configure methods.
-	resp.DataSourceData = sapiClient
-	resp.ResourceData = sapiClient
+	resp.DataSourceData = &sapiClient
+	resp.ResourceData = &sapiClient
 
 	tflog.Info(ctx, "Configured Keboola API client", map[string]any{"success": true})
 }
@@ -158,5 +159,7 @@ func (p *keboolaProvider) DataSources(_ context.Context) []func() datasource.Dat
 
 // Resources defines the resources implemented in the provider.
 func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{
+		NewConfigResource,
+	}
 }
