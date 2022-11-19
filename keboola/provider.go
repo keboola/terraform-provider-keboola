@@ -46,16 +46,19 @@ func (p *keboolaProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 // GetSchema defines the provider-level schema for configuration data.
 func (p *keboolaProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
+		Description: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
 		Attributes: map[string]tfsdk.Attribute{
 			"host": {
-				Type:     types.StringType,
-				Required: true,
-				Optional: true,
+				Description: "URI for Keboola Storage API. May also be provided via " + KBC_HOST + " environment variable.",
+				Type:        types.StringType,
+				Required:    true,
+				Optional:    true,
 			},
 			"token": {
-				Type:      types.StringType,
-				Sensitive: true,
-				Optional:  true,
+				Description: "Storage API Token for the Keboola Storage API. May also be provided via " + KBC_TOKEN + " environment variable.",
+				Type:        types.StringType,
+				Sensitive:   true,
+				Optional:    true,
 			},
 		},
 	}, nil

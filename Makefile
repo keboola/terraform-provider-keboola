@@ -16,13 +16,13 @@ test-install: install
 	terraform -chdir="./examples/provider-install-verification" plan
 
 test-plan: install
-	terraform -chdir="./examples/config" plan
+	terraform -chdir="./examples/ex-generic-config" plan
 
 test-apply: install
-	terraform -chdir="./examples/config" apply -auto-approve
+	terraform -chdir="./examples/ex-generic-config" apply -auto-approve
 
 test-destroy: install
-	terraform -chdir="./examples/config" apply -destroy -auto-approve
+	terraform -chdir="./examples/ex-generic-config" apply -destroy -auto-approve
 
 clean-examples-state:
 	rm -r ./examples/**/*tfstate*
