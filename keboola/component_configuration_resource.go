@@ -54,7 +54,7 @@ func getConfigModelId(model *configModel) string {
 
 // Metadata returns the resource type name.
 func (r *configResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_config"
+	resp.TypeName = req.ProviderTypeName + "_component_configuration"
 }
 
 // GetSchema defines the schema for the resource.

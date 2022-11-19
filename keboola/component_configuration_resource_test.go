@@ -17,7 +17,7 @@ import (
 )
 
 func exGenericResource(resourceId string, resourceDefinition map[string]any) string {
-	result := `	resource "keboola_config" "` + resourceId + `" {
+	result := `	resource "keboola_component_configuration" "` + resourceId + `" {
 		component_id = "ex-generic-v2"`
 	for attribute, value := range resourceDefinition {
 		pair := ""
@@ -35,7 +35,7 @@ func exGenericResource(resourceId string, resourceDefinition map[string]any) str
 }
 
 func checkAllAttributesSet(resourceId string) resource.TestCheckFunc {
-	fullResourceId := "keboola_config." + resourceId
+	fullResourceId := "keboola_component_configuration." + resourceId
 	return resource.ComposeAggregateTestCheckFunc(
 		resource.TestCheckResourceAttrSet(fullResourceId, "id"),
 		resource.TestCheckResourceAttrSet(fullResourceId, "configuration_id"),
@@ -167,9 +167,9 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("testempty"),
-					resource.TestCheckResourceAttr("keboola_config.testempty", "name", "test empty config"),
-					resource.TestCheckResourceAttr("keboola_config.testempty", "is_disabled", "false"),
-					testAccCheckExampleConfigMatchesReality("keboola_config.testempty"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.testempty", "name", "test empty config"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.testempty", "is_disabled", "false"),
+					testAccCheckExampleConfigMatchesReality("keboola_component_configuration.testempty"),
 				),
 			},
 			// Create and Read testing
@@ -185,9 +185,9 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("test"),
-					resource.TestCheckResourceAttr("keboola_config.test", "is_disabled", "false"),
-					resource.TestCheckResourceAttr("keboola_config.test", "description", "description"),
-					testAccCheckExampleConfigMatchesReality("keboola_config.test"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "false"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "description", "description"),
+					testAccCheckExampleConfigMatchesReality("keboola_component_configuration.test"),
 				),
 			},
 			// Update with empty configuration
@@ -199,11 +199,11 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("test"),
-					resource.TestCheckResourceAttr("keboola_config.test", "is_disabled", "true"),
-					resource.TestCheckResourceAttr("keboola_config.test", "description", ""),
-					resource.TestCheckResourceAttr("keboola_config.test", "configuration", "{}"),
-					resource.TestCheckResourceAttr("keboola_config.test", "change_description", "new change"),
-					testAccCheckExampleConfigMatchesReality("keboola_config.test"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "true"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "description", ""),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "configuration", "{}"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "change_description", "new change"),
+					testAccCheckExampleConfigMatchesReality("keboola_component_configuration.test"),
 				),
 			},
 			// Update with some configuration
@@ -212,6 +212,7 @@ func TestAccConfigResource(t *testing.T) {
 					"name": "test config",
 					"configuration": `{
 						"host": "example.com",
+						"port": 123,
 						"storage": {
 							"input": {
 								 "tables": ["in.data1"]
@@ -221,11 +222,10 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					checkAllAttributesSet("test"),
-					resource.TestCheckResourceAttr("keboola_config.test", "is_disabled", "false"),
-					//resource.TestCheckResourceAttr("keboola_config.test", "configuration", "{}"),
-					resource.TestCheckResourceAttr("keboola_config.test", "change_description", "update by Keboola terraform provider"),
-					testAccCheckExampleConfigMatchesReality("keboola_config.test"),
-					testAccCheckExampleConfigurationDataSet("keboola_config.test", "storage.input.tables[0]", "in.data1"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "false"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "change_description", "update by Keboola terraform provider"),
+					testAccCheckExampleConfigMatchesReality("keboola_component_configuration.test"),
+					testAccCheckExampleConfigurationDataSet("keboola_component_configuration.test", "storage.input.tables[0]", "in.data1"),
 				),
 			},
 			// Change configuration id - expects error
@@ -245,10 +245,10 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("configwithid"),
-					resource.TestCheckResourceAttr("keboola_config.configwithid", "name", "test config with id"),
-					resource.TestCheckResourceAttr("keboola_config.configwithid", "is_disabled", "false"),
-					resource.TestCheckResourceAttr("keboola_config.configwithid", "configuration_id", "mycustomconfiguid123"),
-					testAccCheckExampleConfigMatchesReality("keboola_config.configwithid"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "name", "test config with id"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "is_disabled", "false"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "configuration_id", "mycustomconfiguid123"),
+					testAccCheckExampleConfigMatchesReality("keboola_component_configuration.configwithid"),
 				),
 			},
 		},

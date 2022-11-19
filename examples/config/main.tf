@@ -9,7 +9,7 @@ terraform {
 provider "keboola" {
   host = "https://connection.north-europe.azure.keboola.com"
 }
-resource "keboola_config" "ex_generic_test" {
+resource "keboola_component_configuration" "ex_generic_test" {
   name          = "test ex generic new2"
   component_id  = "ex-generic-v2"
   description   = "testing creation of configuration via terraform"

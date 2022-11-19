@@ -25,6 +25,6 @@ test-destroy: install
 	terraform -chdir="./examples/config" apply -destroy -auto-approve
 
 clean-examples-state:
-	rm -r ./examples/**/*tfstate
+	rm -r ./examples/**/*tfstate*
 
 clean: clean-examples-state
