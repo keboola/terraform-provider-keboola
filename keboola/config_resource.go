@@ -2,6 +2,8 @@ package keboola
 
 import (
 	"context"
+	"fmt"
+	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,6 +18,7 @@ import (
 var (
 	_ resource.Resource              = &configResource{}
 	_ resource.ResourceWithConfigure = &configResource{}
+	//_ resource.ResourceWithImportState = &configResource{}
 )
 
 // NewConfigResource is a helper function to simplify the provider implementation.
@@ -30,18 +33,23 @@ type configResource struct {
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
 type configModel struct {
-	BranchID          types.Int64  `tfsdk:"branch_id" writeoptional:"true"`
+	ID                types.String `tfsdk:"id"`
+	BranchID          types.Int64  `tfsdk:"branch_id"`
 	ComponentID       types.String `tfsdk:"component_id"`
-	ID                types.String `tfsdk:"configuration_id"`
+	ConfigID          types.String `tfsdk:"configuration_id"`
 	Name              types.String `tfsdk:"name"`
 	Description       types.String `tfsdk:"description"`
 	ChangeDescription types.String `tfsdk:"change_description"`
-	IsDeleted         types.Bool   `tfsdk:"is_deleted" readonly:"true"`
-	Created           types.String `tfsdk:"created" readonly:"true"`
-	Version           types.Int64  `tfsdk:"version" readonly:"true"`
+	IsDeleted         types.Bool   `tfsdk:"is_deleted"`
+	Created           types.String `tfsdk:"created"`
+	Version           types.Int64  `tfsdk:"version"`
 	//State             types.Map    `tfsdk:"state" readonly:"true"`
 	IsDisabled types.Bool   `tfsdk:"is_disabled"`
 	Content    types.String `tfsdk:"configuration"`
+}
+
+func getConfigModelId(model *configModel) string {
+	return fmt.Sprintf("%d/%s/%s", model.BranchID, model.ComponentID, model.ID)
 }
 
 // Metadata returns the resource type name.
@@ -53,6 +61,13 @@ func (r *configResource) Metadata(_ context.Context, req resource.MetadataReques
 func (r *configResource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
+			"id": {
+				Type:     types.StringType,
+				Computed: true,
+				PlanModifiers: []tfsdk.AttributePlanModifier{
+					resource.UseStateForUnknown(),
+				},
+			},
 			"configuration_id": {
 				Type:     types.StringType,
 				Optional: true,
@@ -74,8 +89,19 @@ func (r *configResource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagno
 			"description": {
 				Type:     types.StringType,
 				Optional: true,
+				Computed: true,
 			},
 			"change_description": {
+				Type:     types.StringType,
+				Optional: true,
+				Computed: true,
+			},
+			"is_disabled": {
+				Type:     types.BoolType,
+				Optional: true,
+				Computed: true,
+			},
+			"configuration": {
 				Type:     types.StringType,
 				Optional: true,
 				Computed: true,
@@ -92,18 +118,6 @@ func (r *configResource) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagno
 				Type:     types.Int64Type,
 				Computed: true,
 			},
-			// "state": {
-			// 	Type:     types.StringType,
-			// 	Computed: true,
-			// },
-			"is_disabled": {
-				Type:     types.BoolType,
-				Optional: true,
-			},
-			"configuration": {
-				Type:     types.StringType,
-				Required: true,
-			},
 		},
 	}, nil
 }
@@ -117,13 +131,17 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	if plan.Content.IsUnknown() {
+		plan.Content = types.StringValue("{}")
+	}
 	configContent := orderedmap.New()
 	contentBytes := []byte(plan.Content.ValueString())
 	err := configContent.UnmarshalJSON(contentBytes)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating configuration",
-			"Could not parse configuration: "+err.Error(),
+			"Could not parse configuration: "+err.Error()+string(contentBytes),
 		)
 		return
 	}
@@ -133,8 +151,8 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	key := ConfigKey{
 		ComponentID: ComponentID(plan.ComponentID.ValueString()),
 	}
-	if !plan.ID.IsNull() {
-		key.ID = ConfigID(plan.ID.ValueString())
+	if !plan.ConfigID.IsNull() {
+		key.ID = ConfigID(plan.ConfigID.ValueString())
 	}
 	if plan.BranchID.IsUnknown() {
 		branch, err := GetDefaultBranchRequest().Send(ctx, r.sapiClient)
@@ -166,14 +184,19 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		)
 		return
 	}
-	plan.ID = types.StringValue(resConfig.ID.String())
+	plan.ConfigID = types.StringValue(resConfig.ID.String())
 	plan.BranchID = types.Int64Value(int64(resConfig.BranchID))
 	plan.IsDeleted = types.BoolValue(resConfig.IsDeleted)
+	plan.ID = types.StringValue(getConfigModelId(&plan))
 	plan.Version = types.Int64Value(int64(resConfig.Version))
 	plan.Created = types.StringValue(resConfig.Created.String())
 	plan.ChangeDescription = types.StringValue(resConfig.ChangeDescription)
+	plan.Description = types.StringValue(resConfig.Description)
+	plan.IsDisabled = types.BoolValue(resConfig.IsDisabled)
+
 	// Set state to fully populated data
 	diags = resp.State.Set(ctx, plan)
+
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -192,7 +215,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 
 	// Get refreshed configuration
 	key := ConfigKey{
-		ID:          ConfigID(state.ID.ValueString()),
+		ID:          ConfigID(state.ConfigID.ValueString()),
 		BranchID:    BranchID(state.BranchID.ValueInt64()),
 		ComponentID: ComponentID(state.ComponentID.ValueString()),
 	}
@@ -201,20 +224,12 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Reading Configuration",
-			"Could not read Configuration"+state.BranchID.String()+"/"+state.ComponentID.ValueString()+"/"+state.ID.ValueString()+": "+err.Error(),
+			"Could not read Configuration"+getConfigModelId(&state)+": "+err.Error(),
 		)
 		return
 	}
 
 	// Overwrite config with refreshed state
-	content, err := config.Content.MarshalJSON()
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading Configuration",
-			"Could not parse configuration "+state.BranchID.String()+"/"+state.ComponentID.ValueString()+"/"+state.ID.ValueString()+": "+err.Error(),
-		)
-		return
-	}
 	state.Name = types.StringValue(config.Name)
 	state.Description = types.StringValue(config.Description)
 	state.ChangeDescription = types.StringValue(config.ChangeDescription)
@@ -222,7 +237,36 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Created = types.StringValue(config.Created.String())
 	state.Version = types.Int64Value(int64(config.Version))
 	state.IsDisabled = types.BoolValue(config.IsDisabled)
-	state.Content = types.StringValue(string(content))
+	state.ID = types.StringValue(getConfigModelId(&state))
+
+	currentContentMap := orderedmap.New()
+	err = currentContentMap.UnmarshalJSON([]byte(state.Content.ValueString()))
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error reading configuration",
+			"Could not parse state configuration: "+err.Error(),
+		)
+		return
+	}
+
+	newContentMap := config.Content
+	newContentBytes, err := newContentMap.MarshalJSON()
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Error Reading Configuration",
+			"Could not parse read configuration "+getConfigModelId(&state)+": "+err.Error(),
+		)
+		return
+	}
+	newContentStr := string(newContentBytes)
+
+	if !reflect.DeepEqual(currentContentMap, newContentMap) {
+		resp.Diagnostics.AddWarning(
+			"Read configuration changed",
+			"Updating local state with to match the read configuration",
+		)
+		state.Content = types.StringValue(newContentStr)
+	}
 
 	// Set refreshed state
 	diags = resp.State.Set(ctx, &state)
@@ -247,18 +291,49 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	if !plan.ComponentID.IsUnknown() && state.ComponentID != plan.ComponentID {
+		resp.Diagnostics.AddError(
+			"Error updating configuration",
+			"Can not change component_id after configuration is created",
+		)
+		return
+	}
+
+	if !plan.BranchID.IsUnknown() && state.BranchID != plan.BranchID {
+		resp.Diagnostics.AddError(
+			"Error updating configuration",
+			"Can not change branch_id after configuration is created",
+		)
+		return
+	}
+
+	if !plan.ConfigID.IsUnknown() && state.ConfigID != plan.ConfigID {
+		resp.Diagnostics.AddError(
+			"Error updating configuration",
+			"Can not change configuration_id after configuration is created",
+		)
+		return
+	}
+
 	// Generate API request body from plan
+	if plan.ChangeDescription.IsUnknown() {
+		plan.ChangeDescription = types.StringValue("update by Keboola terraform provider")
+	}
+
 	configContent := orderedmap.New()
+	if plan.Content.IsUnknown() {
+		plan.Content = types.StringValue("{}")
+	}
 	err := configContent.UnmarshalJSON([]byte(plan.Content.ValueString()))
 	if err != nil {
 		resp.Diagnostics.AddError(
-			"Error creating configuration",
+			"Error updating configuration",
 			"Could not parse configuration: "+err.Error(),
 		)
 		return
 	}
 	key := ConfigKey{
-		ID:          ConfigID(state.ID.ValueString()),
+		ID:          ConfigID(state.ConfigID.ValueString()),
 		BranchID:    BranchID(state.BranchID.ValueInt64()),
 		ComponentID: ComponentID(state.ComponentID.ValueString()),
 	}
@@ -270,27 +345,9 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		Content:           configContent,
 		IsDisabled:        plan.IsDisabled.ValueBool(),
 	}
-	changeFields := []string{}
-
-	if !plan.Name.IsUnknown() {
-		changeFields = append(changeFields, "name")
-	}
-
-	if !plan.Description.IsUnknown() {
-		changeFields = append(changeFields, "description")
-	}
-
-	if !plan.Content.IsUnknown() {
-		changeFields = append(changeFields, "configuration")
-	}
-
-	if !plan.ChangeDescription.IsUnknown() {
-		changeFields = append(changeFields, "changeDescription")
-	}
-
-	if !plan.IsDisabled.IsUnknown() {
-		changeFields = append(changeFields, "isDisabled")
-	}
+	changeFields := []string{"name", "description", "configuration", "changeDescription", "isDisabled"}
+	//fmt.Println(state)
+	//fmt.Println(plan)
 
 	resConfig, err := UpdateConfigRequest(config, changeFields).Send(ctx, r.sapiClient)
 	if err != nil {
@@ -300,9 +357,11 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		)
 		return
 	}
-	plan.ID = types.StringValue(resConfig.ID.String())
+	plan.ConfigID = types.StringValue(resConfig.ID.String())
 	plan.BranchID = types.Int64Value(int64(resConfig.BranchID))
 	plan.ChangeDescription = types.StringValue(resConfig.ChangeDescription)
+	plan.Description = types.StringValue(resConfig.Description)
+	plan.IsDisabled = types.BoolValue(resConfig.IsDisabled)
 	plan.IsDeleted = types.BoolValue(resConfig.IsDeleted)
 	plan.Version = types.Int64Value(int64(resConfig.Version))
 	plan.Created = types.StringValue(resConfig.Created.String())
@@ -324,7 +383,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// Delete existing order
 	key := ConfigKey{
-		ID:          ConfigID(state.ID.ValueString()),
+		ID:          ConfigID(state.ConfigID.ValueString()),
 		BranchID:    BranchID(state.BranchID.ValueInt64()),
 		ComponentID: ComponentID(state.ComponentID.ValueString()),
 	}
@@ -345,3 +404,10 @@ func (r *configResource) Configure(_ context.Context, req resource.ConfigureRequ
 	}
 	r.sapiClient = req.ProviderData.(*client.Client)
 }
+
+// TODO: implement import via https://developer.hashicorp.com/terraform/plugin/framework/resources/import#multiple-attributes
+// func (r *configResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+//     // Retrieve import ID and save to id attribute
+//
+//     resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+// }
