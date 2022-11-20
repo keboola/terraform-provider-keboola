@@ -18,9 +18,12 @@ jobs:
         with:
           go-version-file: "go.mod"
           cache: true
-      - name: "run lint"
-        run: "make lint"
-      - name: "run acceptance tests"
+      - name: "golangci lint"
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: v1.50
+      - name: "acceptance tests"
         env:
           TEST_KBC_HOST: "https://connection.north-europe.azure.keboola.com"
           TEST_KBC_TOKEN: ${{ secrets.TEST_KBC_TOKEN_AZ_NE_11122 }}
