@@ -1,6 +1,6 @@
 default: install
 
-generate:
+generate-docs:
 	go generate ./...
 
 install:
