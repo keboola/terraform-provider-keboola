@@ -18,6 +18,8 @@ jobs:
         with:
           go-version-file: "go.mod"
           cache: true
+      - name: "run lint"
+        run: "make lint"
       - name: "run acceptance tests"
         env:
           TEST_KBC_HOST: "https://connection.north-europe.azure.keboola.com"

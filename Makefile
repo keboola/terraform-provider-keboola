@@ -6,6 +6,9 @@ generate-docs:
 install:
 	go install .
 
+lint:
+	golangci-lint run
+
 test:
 	go test -count=1 -parallel=4 ./...
 
