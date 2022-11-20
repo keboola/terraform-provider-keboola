@@ -43,9 +43,8 @@ type configModel struct {
 	IsDeleted         types.Bool   `tfsdk:"is_deleted"`
 	Created           types.String `tfsdk:"created"`
 	Version           types.Int64  `tfsdk:"version"`
-	//State             types.Map    `tfsdk:"state" readonly:"true"`
-	IsDisabled types.Bool   `tfsdk:"is_disabled"`
-	Content    types.String `tfsdk:"configuration"`
+	IsDisabled        types.Bool   `tfsdk:"is_disabled"`
+	Content           types.String `tfsdk:"configuration"`
 }
 
 func getConfigModelId(model *configModel) string {
