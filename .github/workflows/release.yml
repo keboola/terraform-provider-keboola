@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   test-lint:
-    name: "Test and Lint"
+    name: "lint and test"
     secrets: inherit
     uses: ./.github/workflows/test-lint.yml
   release:
