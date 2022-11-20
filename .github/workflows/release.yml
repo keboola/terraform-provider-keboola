@@ -14,7 +14,13 @@ permissions:
   contents: write
 
 jobs:
+  test-lint:
+    name: "Test and Lint"
+    secrets: inherit
+    uses: ./.github/workflows/test-lint.yml
   release:
+    needs:
+      - test-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -25,11 +31,6 @@ jobs:
         with:
           go-version-file: "go.mod"
           cache: true
-      - name: "run acceptance tests"
-        env:
-          TEST_KBC_HOST: "https://connection.north-europe.azure.keboola.com"
-          TEST_KBC_TOKEN: ${{ secrets.TEST_KBC_TOKEN_AZ_NE_11122 }}
-        run: "make testacc"
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v5
         id: import_gpg

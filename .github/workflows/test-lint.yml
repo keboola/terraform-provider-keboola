@@ -1,10 +1,7 @@
-name: "Acceptance tests"
+name: "Lint and Acceptance tests"
 
 on:
-  push:
-    # Avoid tags
-    branches:
-      - "*"
+  workflow_call:
 
 jobs:
   test:
