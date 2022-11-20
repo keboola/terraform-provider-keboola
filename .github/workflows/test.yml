@@ -22,3 +22,4 @@ jobs:
         env:
           TEST_KBC_HOST: "https://connection.north-europe.azure.keboola.com"
           TEST_KBC_TOKEN: ${{ secrets.TEST_KBC_TOKEN_AZ_NE_11122 }}
+        run: "make testacc"
