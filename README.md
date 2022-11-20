@@ -91,3 +91,8 @@ To develop new resource follow these stops:
 - Implement acceptance tests.
 - Generate docs through `make generate-docs` or `go generate ./...` command.
 - Create a pull request and have it reviewed and released.
+
+### Roadmap
+- Add support for config rows provisioning
+- Add support for terraform import of keboola_component_configuration
+- Add support for buckets and tables provisioning
