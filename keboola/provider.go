@@ -51,7 +51,6 @@ func (p *keboolaProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagn
 			"host": {
 				Description: "URI for Keboola Storage API. May also be provided via " + KBC_HOST + " environment variable.",
 				Type:        types.StringType,
-				Required:    true,
 				Optional:    true,
 			},
 			"token": {

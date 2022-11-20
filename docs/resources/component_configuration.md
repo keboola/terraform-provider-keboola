@@ -15,16 +15,36 @@ Manages component configurations (https://keboola.docs.apiary.io/#reference/comp
 ```terraform
 # Manage example configuration.
 resource "keboola_component_configuration" "ex_generic_test" {
-  name          = "test ex generic new2"
+  name          = "My generic extractor configuration"
   component_id  = "ex-generic-v2"
-  description   = "testing creation of configuration via terraform"
+  description   = "pulls users from my external source"
+  is_disabled   = false
   configuration = <<EOT
-  {
-    "number": 3331,
-    "somevalue": "foobar",
-    "othervalue": "blabla"
-  }
-  EOT
+{
+    "parameters": {
+        "api": {
+            "baseUrl": "http://myexternalresource.com"
+        },
+        "config": {
+            "outputBucket": "output",
+            "jobs": [
+                {
+                    "endpoint": "users",
+                    "children": [
+                        {
+                            "endpoint": "user/{user-id}",
+                            "dataField": ".",
+                            "placeholders": {
+                                "user-id": "id"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+EOT
 }
 ```
 

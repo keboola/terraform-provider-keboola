@@ -15,16 +15,16 @@ testacc:
 test-install: install
 	terraform -chdir="./examples/provider-install-verification" plan
 
-test-plan: install
-	terraform -chdir="./examples/ex-generic-config" plan
+test-config-plan: install
+	terraform -chdir="./examples/resources/keboola_component_configuration" plan
 
-test-apply: install
-	terraform -chdir="./examples/ex-generic-config" apply -auto-approve
+test-config-apply: install
+	terraform -chdir="./examples/resources/keboola_component_configuration" apply -auto-approve
 
-test-destroy: install
-	terraform -chdir="./examples/ex-generic-config" apply -destroy -auto-approve
+test-config-destroy: install
+	terraform -chdir="./examples/resources/keboola_component_configuration" apply -destroy -auto-approve
 
 clean-examples-state:
-	rm -r ./examples/**/*tfstate*
+	rm -r ./examples/**/**/*tfstate*
 
 clean: clean-examples-state
