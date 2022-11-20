@@ -14,13 +14,13 @@ permissions:
   contents: write
 
 jobs:
-  test-lint:
+  lint-test:
     name: "lint and test"
     secrets: inherit
-    uses: ./.github/workflows/test-lint.yml
+    uses: ./.github/workflows/lint-test.yml
   release:
     needs:
-      - test-lint
+      - lint-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
