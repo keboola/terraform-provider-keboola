@@ -1,0 +1,13 @@
+name: "Acceptance tests"
+
+on:
+  push:
+    # Avoid tags
+    branches:
+      - "*"
+
+jobs:
+  lint-test:
+    name: "lint and test"
+    secrets: inherit
+    uses: ./.github/workflows/lint-test.yml
