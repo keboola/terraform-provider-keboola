@@ -149,8 +149,8 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	// Make the Keboola client available during DataSource and Resource
 	// type Configure methods.
-	resp.DataSourceData = &sapiClient
-	resp.ResourceData = &sapiClient
+	resp.DataSourceData = sapiClient
+	resp.ResourceData = sapiClient
 
 	tflog.Info(ctx, "Configured Keboola API client", map[string]any{"success": true})
 }
