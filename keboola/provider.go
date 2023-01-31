@@ -12,8 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 )
 
 // Ensure the implementation satisfies the expected interfaces
@@ -143,7 +142,10 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "keboola_token")
 
 	// Create a new Keboola Storage api client using the configuration values
-	sapiClient := storageapi.ClientWithHostAndToken(client.New(), host, token)
+	sapiClient, err := keboola.NewAPI(ctx, host, keboola.WithToken(token))
+	if err != nil {
+		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
+	}
 
 	// Make the Keboola client available during DataSource and Resource
 	// type Configure methods.

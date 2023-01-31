@@ -11,8 +11,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
-	"github.com/keboola/go-client/pkg/client"
-	"github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
@@ -77,13 +76,18 @@ func testAccCheckExampleConfigMatchesReality(resourceName string) resource.TestC
 		if err != nil {
 			return fmt.Errorf("Could not parse string %s to int: %s", attributes["branch_id"], err)
 		}
-		key := storageapi.ConfigKey{
-			ID:          storageapi.ConfigID(attributes["configuration_id"]),
-			BranchID:    storageapi.BranchID(branchId),
-			ComponentID: storageapi.ComponentID(attributes["component_id"]),
+		key := keboola.ConfigKey{
+			ID:          keboola.ConfigID(attributes["configuration_id"]),
+			BranchID:    keboola.BranchID(branchId),
+			ComponentID: keboola.ComponentID(attributes["component_id"]),
 		}
-		sapiClient := storageapi.ClientWithHostAndToken(client.New(), host, token)
-		storedConfig, err := storageapi.GetConfigRequest(key).Send(context.Background(), sapiClient)
+		ctx := context.Background()
+		sapiClient, err := keboola.NewAPI(ctx, host, keboola.WithToken(token))
+		if err != nil {
+			return fmt.Errorf("Could not init Keboola client: %s", err)
+		}
+
+		storedConfig, err := sapiClient.GetConfigRequest(key).Send(ctx)
 		if err != nil {
 			return fmt.Errorf("Could not load config: %s", err)
 		}

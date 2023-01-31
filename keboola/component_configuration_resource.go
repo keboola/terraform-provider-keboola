@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/keboola/go-client/pkg/client"
-	. "github.com/keboola/go-client/pkg/storageapi"
+	"github.com/keboola/go-client/pkg/keboola"
+	. "github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
@@ -28,7 +28,7 @@ func NewConfigResource() resource.Resource {
 
 // configResource is the resource implementation.
 type configResource struct {
-	sapiClient *client.Client
+	sapiClient *keboola.API
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -167,7 +167,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		key.ID = ConfigID(plan.ConfigID.ValueString())
 	}
 	if plan.BranchID.IsUnknown() {
-		branch, err := GetDefaultBranchRequest().Send(ctx, r.sapiClient)
+		branch, err := r.sapiClient.GetDefaultBranchRequest().Send(ctx)
 		if err != nil {
 			resp.Diagnostics.AddError(
 				"Error creating configuration",
@@ -188,7 +188,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Rows: []*ConfigRow{},
 	}
-	resConfig, err := CreateConfigRequest(config).Send(ctx, r.sapiClient)
+	resConfig, err := r.sapiClient.CreateConfigRequest(config).Send(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating configuration",
@@ -231,7 +231,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 		BranchID:    BranchID(state.BranchID.ValueInt64()),
 		ComponentID: ComponentID(state.ComponentID.ValueString()),
 	}
-	config, err := GetConfigRequest(key).Send(ctx, r.sapiClient)
+	config, err := r.sapiClient.GetConfigRequest(key).Send(ctx)
 
 	if err != nil {
 		resp.Diagnostics.AddError(
@@ -361,7 +361,7 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	//fmt.Println(state)
 	//fmt.Println(plan)
 
-	resConfig, err := UpdateConfigRequest(config, changeFields).Send(ctx, r.sapiClient)
+	resConfig, err := r.sapiClient.UpdateConfigRequest(config, changeFields).Send(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating configuration",
@@ -399,7 +399,7 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 		BranchID:    BranchID(state.BranchID.ValueInt64()),
 		ComponentID: ComponentID(state.ComponentID.ValueString()),
 	}
-	err := DeleteConfigRequest(key).SendOrErr(ctx, r.sapiClient)
+	err := r.sapiClient.DeleteConfigRequest(key).SendOrErr(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error Deleting Configuration",
@@ -414,7 +414,7 @@ func (r *configResource) Configure(_ context.Context, req resource.ConfigureRequ
 	if req.ProviderData == nil {
 		return
 	}
-	r.sapiClient = req.ProviderData.(*client.Client)
+	r.sapiClient = req.ProviderData.(*keboola.API)
 }
 
 // TODO: implement import via https://developer.hashicorp.com/terraform/plugin/framework/resources/import#multiple-attributes
