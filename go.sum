@@ -1030,10 +1030,10 @@ github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7V
 github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8IZAc4RVcycCCAKdM=
 github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
-github.com/keboola/go-client v1.2.0 h1:dV68u5OtoPFLzS03VoSD3zu+k+8DCBNN/AXwDzJNtYA=
-github.com/keboola/go-client v1.2.0/go.mod h1:N3K8v6NM0wuV+u/+dPS/wcbTmDLrRXQcyRInYZRSgPE=
-github.com/keboola/go-utils v0.6.2 h1:drCyJA1+0xslOe/G53G4zd/M9Bgp7fLIkrj3AkUOanY=
-github.com/keboola/go-utils v0.6.2/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
+github.com/keboola/go-client v1.5.0 h1:Ux7HyOJwg26TU6iF7O5psOlvrxbXgRe4lVgSf2yEKKY=
+github.com/keboola/go-client v1.5.0/go.mod h1:xMWisErTi+ABvbS8hGpRtvoYdkxtCNvJNIufsToyHp8=
+github.com/keboola/go-utils v0.8.1 h1:nkTiAX9Me9NHvEkopm762BKV+iMNDqWyXmBsOTVDmyE=
+github.com/keboola/go-utils v0.8.1/go.mod h1:5wkrBfGBpJ/COCkBO0JPckD0e9sdT1PQo09Phx+kqrw=
 github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351 h1:DowS9hvgyYSX4TO5NpyC606/Z4SxnNYbT+WX27or6Ck=
 github.com/kevinburke/ssh_config v0.0.0-20201106050909-4977a11b4351/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=

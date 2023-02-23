@@ -8,8 +8,8 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.14.1
 	github.com/hashicorp/terraform-plugin-log v0.7.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.24.1
-	github.com/keboola/go-client v1.2.0
-	github.com/keboola/go-utils v0.6.2
+	github.com/keboola/go-client v1.5.0
+	github.com/keboola/go-utils v0.8.1
 )
 
 require (
