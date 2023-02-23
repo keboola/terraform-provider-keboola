@@ -26,6 +26,9 @@ test-config-apply: install
 
 test-config-destroy: install
 	terraform -chdir="./examples/resources/keboola_component_configuration" apply -destroy -auto-approve
+test-config-show-state: install
+	terraform -chdir="./examples/resources/keboola_component_configuration" state show keboola_component_configuration.ex_generic_test
+test-config: test-config-destroy test-config-apply test-config-apply test-config-show-state
 
 clean-examples-state:
 	rm -r ./examples/**/**/*tfstate*

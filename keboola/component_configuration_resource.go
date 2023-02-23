@@ -48,7 +48,7 @@ type configModel struct {
 }
 
 func getConfigModelId(model *configModel) string {
-	return fmt.Sprintf("%d/%s/%s", model.BranchID, model.ComponentID, model.ID)
+	return fmt.Sprintf("%d/%v/%v", model.BranchID.ValueInt64(), model.ComponentID.ValueString(), model.ConfigID.ValueString())
 }
 
 // Metadata returns the resource type name.
@@ -201,7 +201,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.IsDeleted = types.BoolValue(resConfig.IsDeleted)
 	plan.ID = types.StringValue(getConfigModelId(&plan))
 	plan.Version = types.Int64Value(int64(resConfig.Version))
-	plan.Created = types.StringValue(resConfig.Created.String())
+	plan.Created = types.StringValue(resConfig.Created.UTC().String())
 	plan.ChangeDescription = types.StringValue(resConfig.ChangeDescription)
 	plan.Description = types.StringValue(resConfig.Description)
 	plan.IsDisabled = types.BoolValue(resConfig.IsDisabled)
@@ -246,7 +246,7 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Description = types.StringValue(config.Description)
 	state.ChangeDescription = types.StringValue(config.ChangeDescription)
 	state.IsDeleted = types.BoolValue(config.IsDeleted)
-	state.Created = types.StringValue(config.Created.String())
+	state.Created = types.StringValue(config.Created.UTC().String())
 	state.Version = types.Int64Value(int64(config.Version))
 	state.IsDisabled = types.BoolValue(config.IsDisabled)
 	state.ID = types.StringValue(getConfigModelId(&state))
@@ -376,7 +376,7 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 	plan.IsDisabled = types.BoolValue(resConfig.IsDisabled)
 	plan.IsDeleted = types.BoolValue(resConfig.IsDeleted)
 	plan.Version = types.Int64Value(int64(resConfig.Version))
-	plan.Created = types.StringValue(resConfig.Created.String())
+	plan.Created = types.StringValue(resConfig.Created.UTC().String())
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
