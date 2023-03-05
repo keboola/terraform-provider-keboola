@@ -31,6 +31,7 @@ test-config-show-state: install
 test-config: test-config-destroy test-config-apply test-config-apply test-config-show-state
 
 clean-examples-state:
-	rm -r ./examples/**/**/*tfstate*
+	rm -r ./examples/**/**/*tfstate* || true
+	rm -rf ./examples/**/**/.terraform*
 
 clean: clean-examples-state
