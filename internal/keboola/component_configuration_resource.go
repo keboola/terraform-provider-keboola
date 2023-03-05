@@ -1,4 +1,4 @@
-package keboola
+package provider
 
 import (
 	"context"

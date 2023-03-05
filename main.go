@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"log"
-	"terraform-provider-keboola/keboola"
+	"terraform-provider-keboola/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
@@ -33,7 +33,7 @@ func main() {
 
 	flag.BoolVar(&debug, "debug", false, "set to true to run the provider with support for debuggers like delve")
 	flag.Parse()
-	err := providerserver.Serve(context.Background(), keboola.New(version), providerserver.ServeOpts{
+	err := providerserver.Serve(context.Background(), provider.New(version), providerserver.ServeOpts{
 		Address: "registry.terraform.io/keboola/keboola",
 		Debug:   debug,
 	})
