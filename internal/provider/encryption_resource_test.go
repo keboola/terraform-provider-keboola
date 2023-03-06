@@ -15,7 +15,7 @@ func TestAccEncryptionResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// Create and Read testing
 			{
-				Config: testEncryptionResourceConfig("valuetoencrypt"),
+				Config: providerConfig + testEncryptionResourceConfig("valuetoencrypt"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("keboola_encryption.test", "value", "valuetoencrypt"),
 					resource.TestMatchResourceAttr("keboola_encryption.test", "encrypted_value", regexp.MustCompile(`KBC::ProjectSecureKV::.+`)),
