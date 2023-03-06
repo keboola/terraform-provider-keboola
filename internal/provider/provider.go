@@ -1,35 +1,41 @@
-package keboola
+package provider
 
 import (
 	"context"
 	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 )
 
 // Ensure the implementation satisfies the expected interfaces
-var (
-	_ provider.Provider = &keboolaProvider{}
-)
+var _ provider.Provider = (*keboolaProvider)(nil)
 
 const KBC_HOST = "KBC_HOST"
 const KBC_TOKEN = "KBC_TOKEN"
 
 // New is a helper function to simplify provider server and testing implementation.
-func New() provider.Provider {
-	return &keboolaProvider{}
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &keboolaProvider{
+			version: version,
+		}
+	}
 }
 
 // keboolaProvider is the provider implementation.
-type keboolaProvider struct{}
+type keboolaProvider struct {
+	// version is set to the provider version on release, "dev" when the
+	// provider is built and ran locally, and "test" when running acceptance
+	// testing.
+	version string
+}
 
 // keboolaProviderModel maps provider schema data to a Go type.
 type keboolaProviderModel struct {
@@ -38,28 +44,27 @@ type keboolaProviderModel struct {
 }
 
 // Metadata returns the provider type name.
-func (p *keboolaProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *keboolaProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "keboola"
+	resp.Version = p.version
 }
 
 // GetSchema defines the provider-level schema for configuration data.
-func (p *keboolaProvider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (p *keboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	resp.Schema = schema.Schema{
 		Description: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
-		Attributes: map[string]tfsdk.Attribute{
-			"host": {
+		Attributes: map[string]schema.Attribute{
+			"host": schema.StringAttribute{
 				Description: "URI for Keboola Storage API. May also be provided via " + KBC_HOST + " environment variable.",
-				Type:        types.StringType,
 				Optional:    true,
 			},
-			"token": {
+			"token": schema.StringAttribute{
 				Description: "Storage API Token for the Keboola Storage API. May also be provided via " + KBC_TOKEN + " environment variable.",
-				Type:        types.StringType,
 				Sensitive:   true,
 				Optional:    true,
 			},
 		},
-	}, nil
+	}
 }
 
 // Configure prepares a Keboola API client for data sources and resources.
