@@ -404,7 +404,7 @@ func (r *configResource) Configure(_ context.Context, req resource.ConfigureRequ
 	if req.ProviderData == nil {
 		return
 	}
-	r.sapiClient = req.ProviderData.(*keboola.API)
+	r.sapiClient = req.ProviderData.(*providerData).client
 }
 
 // TODO: implement import via https://developer.hashicorp.com/terraform/plugin/framework/resources/import#multiple-attributes

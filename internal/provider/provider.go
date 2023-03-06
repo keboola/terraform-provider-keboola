@@ -37,6 +37,11 @@ type keboolaProvider struct {
 	version string
 }
 
+type providerData struct {
+	client *keboola.API
+	token  *keboola.Token
+}
+
 // keboolaProviderModel maps provider schema data to a Go type.
 type keboolaProviderModel struct {
 	Host  types.String `tfsdk:"host"`
@@ -151,11 +156,16 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
 	}
+	tokenObject, err := sapiClient.VerifyTokenRequest(token).Send(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("Could not initialize Keboola client, given token is invalid:", err.Error())
+	}
 
 	// Make the Keboola client available during DataSource and Resource
 	// type Configure methods.
-	resp.DataSourceData = sapiClient
-	resp.ResourceData = sapiClient
+	data := providerData{sapiClient, tokenObject}
+	resp.DataSourceData = &data
+	resp.ResourceData = &data
 
 	tflog.Info(ctx, "Configured Keboola API client", map[string]any{"success": true})
 }
@@ -169,5 +179,6 @@ func (p *keboolaProvider) DataSources(_ context.Context) []func() datasource.Dat
 func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		NewConfigResource,
+		NewEnryptionResource,
 	}
 }
