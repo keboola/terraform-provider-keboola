@@ -38,7 +38,7 @@ type keboolaProvider struct {
 }
 
 type providerData struct {
-	client *keboola.API
+	client *keboola.AuthorizedAPI
 	token  *keboola.Token
 }
 
@@ -152,7 +152,7 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "keboola_token")
 
 	// Create a new Keboola Storage api client using the configuration values
-	sapiClient, err := keboola.NewAPI(ctx, host, keboola.WithToken(token))
+	sapiClient, err := keboola.NewAuthorizedAPI(ctx, host, token)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
 	}
