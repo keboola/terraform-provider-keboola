@@ -82,7 +82,7 @@ func testAccCheckExampleConfigMatchesReality(resourceName string) resource.TestC
 			ComponentID: keboola.ComponentID(attributes["component_id"]),
 		}
 		ctx := context.Background()
-		sapiClient, err := keboola.NewAPI(ctx, host, keboola.WithToken(token))
+		sapiClient, err := keboola.NewAuthorizedAPI(ctx, host, token)
 		if err != nil {
 			return fmt.Errorf("Could not init Keboola client: %s", err)
 		}

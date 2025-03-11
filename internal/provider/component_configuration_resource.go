@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/keboola/go-client/pkg/keboola"
-	. "github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
@@ -30,7 +29,7 @@ func NewConfigResource() resource.Resource {
 
 // configResource is the resource implementation.
 type configResource struct {
-	sapiClient *keboola.API
+	sapiClient *keboola.AuthorizedAPI
 }
 
 // Config https://keboola.docs.apiary.io/#reference/components-and-configurations/component-configurations/list-configurations
@@ -150,11 +149,11 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 	if plan.ChangeDescription.IsNull() {
 		plan.ChangeDescription = types.StringValue("created by Keboola terraform provider")
 	}
-	key := ConfigKey{
-		ComponentID: ComponentID(plan.ComponentID.ValueString()),
+	key := keboola.ConfigKey{
+		ComponentID: keboola.ComponentID(plan.ComponentID.ValueString()),
 	}
 	if !plan.ConfigID.IsNull() {
-		key.ID = ConfigID(plan.ConfigID.ValueString())
+		key.ID = keboola.ConfigID(plan.ConfigID.ValueString())
 	}
 	if plan.BranchID.IsUnknown() {
 		branch, err := r.sapiClient.GetDefaultBranchRequest().Send(ctx)
@@ -167,8 +166,8 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 		}
 		key.BranchID = branch.ID
 	}
-	config := &ConfigWithRows{
-		Config: &Config{
+	config := &keboola.ConfigWithRows{
+		Config: &keboola.Config{
 			ConfigKey:         key,
 			Name:              plan.Name.ValueString(),
 			Description:       plan.Description.ValueString(),
@@ -176,7 +175,7 @@ func (r *configResource) Create(ctx context.Context, req resource.CreateRequest,
 			Content:           configContent,
 			IsDisabled:        plan.IsDisabled.ValueBool(),
 		},
-		Rows: []*ConfigRow{},
+		Rows: []*keboola.ConfigRow{},
 	}
 	resConfig, err := r.sapiClient.CreateConfigRequest(config).Send(ctx)
 	if err != nil {
@@ -216,10 +215,10 @@ func (r *configResource) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	// Get refreshed configuration
-	key := ConfigKey{
-		ID:          ConfigID(state.ConfigID.ValueString()),
-		BranchID:    BranchID(state.BranchID.ValueInt64()),
-		ComponentID: ComponentID(state.ComponentID.ValueString()),
+	key := keboola.ConfigKey{
+		ID:          keboola.ConfigID(state.ConfigID.ValueString()),
+		BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+		ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
 	}
 	config, err := r.sapiClient.GetConfigRequest(key).Send(ctx)
 
@@ -334,12 +333,12 @@ func (r *configResource) Update(ctx context.Context, req resource.UpdateRequest,
 		)
 		return
 	}
-	key := ConfigKey{
-		ID:          ConfigID(state.ConfigID.ValueString()),
-		BranchID:    BranchID(state.BranchID.ValueInt64()),
-		ComponentID: ComponentID(state.ComponentID.ValueString()),
+	key := keboola.ConfigKey{
+		ID:          keboola.ConfigID(state.ConfigID.ValueString()),
+		BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+		ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
 	}
-	config := &Config{
+	config := &keboola.Config{
 		ConfigKey:         key,
 		Name:              plan.Name.ValueString(),
 		Description:       plan.Description.ValueString(),
@@ -384,10 +383,10 @@ func (r *configResource) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// Delete existing order
-	key := ConfigKey{
-		ID:          ConfigID(state.ConfigID.ValueString()),
-		BranchID:    BranchID(state.BranchID.ValueInt64()),
-		ComponentID: ComponentID(state.ComponentID.ValueString()),
+	key := keboola.ConfigKey{
+		ID:          keboola.ConfigID(state.ConfigID.ValueString()),
+		BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+		ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
 	}
 	err := r.sapiClient.DeleteConfigRequest(key).SendOrErr(ctx)
 	if err != nil {

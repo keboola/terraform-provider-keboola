@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/keboola/go-client/pkg/keboola"
-	. "github.com/keboola/go-client/pkg/keboola"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -29,7 +28,7 @@ func NewEnryptionResource() resource.Resource {
 
 // configResource is the resource implementation.
 type EncryptionResource struct {
-	sapiClient *keboola.API
+	sapiClient *keboola.AuthorizedAPI
 	projectId  int
 }
 
@@ -96,7 +95,7 @@ func (r *EncryptionResource) Create(ctx context.Context, req resource.CreateRequ
 	requestBody := map[string]string{
 		"#value": data.Value.ValueString(),
 	}
-	result, err := client.EncryptRequest(r.projectId, ComponentID(data.ComponentID.ValueString()), requestBody).Send(ctx)
+	result, err := client.EncryptRequest(r.projectId, keboola.ComponentID(data.ComponentID.ValueString()), requestBody).Send(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to encrypt value, got error: %s", err))
 		return
@@ -147,7 +146,7 @@ func (r *EncryptionResource) Update(ctx context.Context, req resource.UpdateRequ
 		requestBody := map[string]string{
 			"#value": data.Value.ValueString(),
 		}
-		result, err := client.EncryptRequest(r.projectId, ComponentID(data.ComponentID.ValueString()), requestBody).Send(ctx)
+		result, err := client.EncryptRequest(r.projectId, keboola.ComponentID(data.ComponentID.ValueString()), requestBody).Send(ctx)
 		if err != nil {
 			resp.Diagnostics.AddError("Client Error", fmt.Sprintf("Unable to encrypt value, got error: %s", err))
 			return
