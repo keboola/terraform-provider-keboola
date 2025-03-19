@@ -310,8 +310,8 @@ func TestAccConfigResource(t *testing.T) {
 	})
 }
 
-func TestAccConfigRowsCRUD(t *testing.T) {
-	t.Parallel()
+func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
+	// t.Parallel()
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,
