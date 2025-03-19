@@ -108,48 +108,27 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Info(ctx, "Reading encryption resource")
 
-	// Get current state - nothing to do for encryption resources as they're stateless
-	var state Model
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Set refreshed state
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
+	// Use the base resource abstraction for Read
+	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, model Model) (*EncryptResponse, error) {
+		// Nothing to do for encryption resources as they're stateless
+		// Just return nil to indicate no API call is needed
+		return nil, nil
+	})
 }
 
 // Update updates the resource and sets the updated Terraform state
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	tflog.Info(ctx, "Updating encryption resource")
 
-	// Get plan and state
-	var plan, state Model
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// If the value is empty, keep the previous encrypted value
-	if plan.Value.ValueString() == "" {
-		tflog.Info(ctx, "Value is empty, keeping previous encrypted value")
-		plan.EncryptedValue = state.EncryptedValue
-		diags = resp.State.Set(ctx, plan)
-		resp.Diagnostics.Append(diags...)
-		return
-	}
-
 	// Use the base resource abstraction for Update
 	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state Model, plan Model) (*EncryptResponse, error) {
+		// If the value is empty, keep the previous encrypted value
+		if plan.Value.ValueString() == "" {
+			tflog.Info(ctx, "Value is empty, keeping previous encrypted value")
+			plan.EncryptedValue = state.EncryptedValue
+			return nil, nil
+		}
+
 		// Handle API call from the mapper
 		return r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
 	})

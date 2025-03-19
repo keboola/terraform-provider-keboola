@@ -194,7 +194,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 			plan.BranchID = types.Int64Value(int64(branch.ID))
 		}
 
-		// Convert to API model
+		// Execute the create operation using the mapper
 		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, ConfigModel{}, plan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
@@ -206,7 +206,6 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 			return nil, fmt.Errorf("could not create configuration: %w", err)
 		}
 
-		// Return config with rows for mapping back to terraform model
 		return resConfig, nil
 	})
 }
@@ -259,12 +258,12 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	// Use the base resource abstraction for Update
 	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state ConfigModel, plan ConfigModel) (*keboola.ConfigWithRows, error) {
-		// Preserve branch, component, and config IDs
+		// Preserve branch, component, and config IDs from state
 		plan.BranchID = state.BranchID
 		plan.ComponentID = state.ComponentID
 		plan.ConfigID = state.ConfigID
 
-		// Convert plan to API model
+		// Execute the update operation using the mapper
 		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
 		if err != nil {
 			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
