@@ -1,7 +1,6 @@
-package configuration
+package configuration_test
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"reflect"
@@ -18,11 +17,11 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
 )
 
-func exGenericResource(resourceId string, resourceDefinition map[string]any) string {
-	result := `	resource "keboola_component_configuration" "` + resourceId + `" {
+func exGenericResource(resourceID string, resourceDefinition map[string]any) string {
+	result := `	resource "keboola_component_configuration" "` + resourceID + `" {
 		component_id = "ex-generic-v2"`
 	for attribute, value := range resourceDefinition {
-		pair := ""
+		var pair string
 		switch v := value.(type) {
 		case string:
 			pair = fmt.Sprintf("%s = %v ", attribute, strconv.Quote(v))
@@ -57,28 +56,28 @@ func exGenericResource(resourceId string, resourceDefinition map[string]any) str
 	return result
 }
 
-func checkAllAttributesSet(resourceId string) resource.TestCheckFunc {
-	fullResourceId := "keboola_component_configuration." + resourceId
+func checkAllAttributesSet(resourceID string) resource.TestCheckFunc {
+	fullResourceID := "keboola_component_configuration." + resourceID
 
 	return resource.ComposeAggregateTestCheckFunc(
-		resource.TestCheckResourceAttrSet(fullResourceId, "id"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "configuration_id"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "component_id"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "branch_id"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "name"),
-		// resource.TestCheckResourceAttrSet(fullResourceId, "description"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "change_description"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "is_deleted"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "created"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "version"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "is_disabled"),
-		resource.TestCheckResourceAttrSet(fullResourceId, "configuration"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "id"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "configuration_id"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "component_id"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "branch_id"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "name"),
+		// resource.TestCheckResourceAttrSet(fullResourceID, "description"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "change_description"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "is_deleted"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "created"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "version"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "is_disabled"),
+		resource.TestCheckResourceAttrSet(fullResourceID, "configuration"),
 	)
 }
 
 func checkAttribute(attributeName, actualValue, expectedValue string) error {
 	if actualValue != expectedValue {
-		return fmt.Errorf("Stored configuration doesn't match state, attribute: %s \n expected: %s \n actual:%s \n", attributeName, expectedValue, actualValue)
+		return provider_test.NewAttributeMismatchError(attributeName, expectedValue, actualValue)
 	}
 
 	return nil
@@ -86,23 +85,25 @@ func checkAttribute(attributeName, actualValue, expectedValue string) error {
 
 // loads configuration from host and compares to the terraform state.
 func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) resource.TestCheckFunc {
+	t.Helper()
+
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
+			return provider_test.NewResourceNotFoundError(resourceName)
 		}
 
-		host := os.Getenv("TEST_KBC_HOST")
-		token := os.Getenv("TEST_KBC_TOKEN")
+		host := os.Getenv("TEST_KBC_HOST")   //nolint: forbidigo
+		token := os.Getenv("TEST_KBC_TOKEN") //nolint: forbidigo
 
 		attributes := rs.Primary.Attributes
-		branchId, err := strconv.Atoi(attributes["branch_id"])
+		branchID, err := strconv.Atoi(attributes["branch_id"])
 		if err != nil {
 			return fmt.Errorf("Could not parse string %s to int: %w", attributes["branch_id"], err)
 		}
 		key := keboola.ConfigKey{
 			ID:          keboola.ConfigID(attributes["configuration_id"]),
-			BranchID:    keboola.BranchID(branchId),
+			BranchID:    keboola.BranchID(branchID),
 			ComponentID: keboola.ComponentID(attributes["component_id"]),
 		}
 		ctx := t.Context()
@@ -154,7 +155,7 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 		expectedContentStr := attributes["configuration"]
 		err = expectedContent.UnmarshalJSON([]byte(expectedContentStr))
 		if err != nil {
-			return fmt.Errorf("Could not unmarshal expected configuration to ordered map. Error: %w", err)
+			return provider_test.NewConfigParseError(err)
 		}
 		actualBytes, err := actualContent.MarshalJSON()
 		if err != nil {
@@ -173,13 +174,13 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return fmt.Errorf("Not found: %s", resourceName)
+			return provider_test.NewResourceNotFoundError(resourceName)
 		}
 		configStr := rs.Primary.Attributes["configuration"]
 		configMap := orderedmap.New()
 		err := configMap.UnmarshalJSON([]byte(configStr))
 		if err != nil {
-			return fmt.Errorf("Couldn't parse configuration: %w", err)
+			return provider_test.NewConfigParseError(err)
 		}
 		path := orderedmap.PathFromStr(path)
 		value, found, err := configMap.GetNestedPath(path)
@@ -187,10 +188,10 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 			return fmt.Errorf("Get path failed: %w", err)
 		}
 		if !found {
-			return fmt.Errorf("Get path %s not found:", path)
+			return provider_test.NewPathNotFoundError(path.String())
 		}
 		if value != expectedValue {
-			return fmt.Errorf("Get path %s value didn't match: expected: %s found: %s", path, expectedValue, value)
+			return provider_test.NewPathValueMismatchError(path.String(), expectedValue, value)
 		}
 
 		return nil
@@ -198,6 +199,7 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 }
 
 func TestAccConfigResource(t *testing.T) {
+	t.Parallel()
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,
@@ -309,6 +311,7 @@ func TestAccConfigResource(t *testing.T) {
 }
 
 func TestAccConfigRowsCRUD(t *testing.T) {
+	t.Parallel()
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,

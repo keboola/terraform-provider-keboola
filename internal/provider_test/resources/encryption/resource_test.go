@@ -1,4 +1,4 @@
-package encryption
+package encryption_test
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ import (
 // This is a placeholder that should be implemented correctly when running the actual tests
 
 func TestAccEncryptionResource(t *testing.T) {
+	t.Parallel()
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,

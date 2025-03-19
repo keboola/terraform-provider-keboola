@@ -2,11 +2,13 @@ package encryption
 
 import (
 	"context"
+	"errors"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -14,14 +16,24 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
+// Sentinel errors for encryption resource.
+var (
+	// ErrStateless indicates that no API call is needed for this operation as the resource is stateless.
+	ErrStateless = errors.New("encryption resource is stateless, no API call needed")
+)
+
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource              = &Resource{}
-	_ resource.ResourceWithConfigure = &Resource{}
+	_ resource.Resource = &Resource{
+		base: abstraction.BaseResource[Model, *EncryptResponse]{}, client: nil, projectID: 0,
+	}
+	_ resource.ResourceWithConfigure = &Resource{
+		base: abstraction.BaseResource[Model, *EncryptResponse]{}, client: nil, projectID: 0,
+	}
 )
 
 // NewResource is a helper function to simplify the provider implementation.
-func NewResource() resource.Resource {
+func NewResource() *Resource {
 	return &Resource{}
 }
 
@@ -32,7 +44,7 @@ type Resource struct {
 
 	// Direct access to the API client for specific operations
 	client    *keboola.AuthorizedAPI
-	projectId int
+	projectID int
 }
 
 // Metadata returns the resource type name.
@@ -41,10 +53,14 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 }
 
 // Schema defines the schema for the resource.
-func (r *Resource) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
+func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server
 		MarkdownDescription: "Encryption resource",
+		Description:         "Encryption resource for securely storing sensitive data in Keboola",
+		DeprecationMessage:  "",
+		Version:             1,
+		Blocks:              map[string]schema.Block{},
 
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
@@ -56,16 +72,18 @@ func (r *Resource) Schema(_ context.Context, req resource.SchemaRequest, resp *r
 			},
 			"component_id": schema.StringAttribute{
 				MarkdownDescription: "Id of the component where the encrypted value will be used.",
+				Description:         "Id of the component where the encrypted value will be used.",
 				Required:            true,
 			},
 			"value": schema.StringAttribute{
 				MarkdownDescription: "Value to be encrypted.",
+				Description:         "Value to be encrypted.",
 				Optional:            true,
 				Computed:            true,
 				Sensitive:           true,
 			},
 			"encrypted_value": schema.StringAttribute{
-				MarkdownDescription: "Actual encrypted value of the value attribute. If the value attribute changes to an empty-string then the encrypted value won't update and keep the current one.",
+				MarkdownDescription: "Actual encrypted value of the value attribute. If the value attribute changes to an empty-string then the encrypted value won't update and keep the current one.", //nolint: lll
 				Computed:            true,
 			},
 		},
@@ -73,7 +91,7 @@ func (r *Resource) Schema(_ context.Context, req resource.SchemaRequest, resp *r
 }
 
 // Configure adds the provider configured client to the resource.
-func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
 	// Return silently if provider data is not available (yet)
 	if req.ProviderData == nil {
 		return
@@ -84,12 +102,12 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, r
 
 	// Set up the API client
 	r.client = providerData.Client
-	r.projectId = providerData.Token.ProjectID()
+	r.projectID = providerData.Token.ProjectID()
 
 	// Set up the mapper
-	r.base.Mapper = &EncryptionMapper{
+	r.base.Mapper = &Mapper{
 		client:    r.client,
-		projectId: r.projectId,
+		projectID: r.projectID,
 	}
 }
 
@@ -100,7 +118,14 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	// Use the base resource abstraction for Create
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*EncryptResponse, error) {
 		// Handle API call from the mapper
-		return r.base.Mapper.MapTerraformToAPI(ctx, Model{}, model)
+		emptyModel := Model{
+			ID:             types.StringNull(),
+			ComponentID:    types.StringNull(),
+			Value:          types.StringNull(),
+			EncryptedValue: types.StringNull(),
+		}
+
+		return r.base.Mapper.MapTerraformToAPI(ctx, emptyModel, model)
 	})
 }
 
@@ -109,10 +134,10 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	tflog.Info(ctx, "Reading encryption resource")
 
 	// Use the base resource abstraction for Read
-	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, model Model) (*EncryptResponse, error) {
+	r.base.ExecuteRead(ctx, req, resp, func(_ context.Context, _ Model) (*EncryptResponse, error) {
 		// Nothing to do for encryption resources as they're stateless
-		// Just return nil to indicate no API call is needed
-		return nil, nil
+		// Return sentinel error to indicate no API call is needed
+		return nil, ErrStateless
 	})
 }
 
@@ -144,10 +169,9 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Info(ctx, "Deleting encryption resource")
 
-	// Nothing to do for encryption resources as they're stateless
-	// but we use the base resource for consistency and proper diagnostics
-	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, model Model) error {
-		// No API call needed for deletion
-		return nil
+	// Use the generic base resource implementation
+	r.base.ExecuteDelete(ctx, req, resp, func(_ context.Context, _ Model) error {
+		// Nothing to do for encryption resources - they're virtual
+		return ErrStateless
 	})
 }

@@ -24,5 +24,5 @@ provider "keboola" {
 
 ### Optional
 
-- `host` (String) URI for Keboola Storage API. May also be provided via KBC_HOST environment variable.
-- `token` (String, Sensitive) Storage API Token for the Keboola Storage API. May also be provided via KBC_TOKEN environment variable.
+- `host` (String) URL of the Keboola Connection API. Can be also provided via KBC_HOST environment variable.
+- `token` (String, Sensitive) API Token used to authenticate against the API. Can be also provided via KBC_TOKEN environment variable.

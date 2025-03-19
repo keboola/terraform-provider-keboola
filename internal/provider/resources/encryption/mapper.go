@@ -12,15 +12,15 @@ import (
 // EncryptResponse is a simple wrapper around the map response from the API.
 type EncryptResponse map[string]string
 
-// EncryptionMapper implements ResourceMapper for encryption resources.
-type EncryptionMapper struct {
+// Mapper implements ResourceMapper for encryption resources.
+type Mapper struct {
 	client    *keboola.AuthorizedAPI
-	projectId int
+	projectID int
 }
 
 // MapAPIToTerraform converts a Keboola API EncryptResponse to a Terraform model.
-func (m *EncryptionMapper) MapAPIToTerraform(
-	ctx context.Context,
+func (m *Mapper) MapAPIToTerraform(
+	_ context.Context,
 	apiModel *EncryptResponse,
 	tfModel *Model,
 ) diag.Diagnostics {
@@ -33,15 +33,15 @@ func (m *EncryptionMapper) MapAPIToTerraform(
 	}
 
 	// Set ID field
-	tfModel.Id = types.StringValue("none")
+	tfModel.ID = types.StringValue("none")
 
 	return diags
 }
 
-// MapTerraformToAPI converts a Terraform model to a Keboola API EncryptResponse.
-func (m *EncryptionMapper) MapTerraformToAPI(
+// MapTerraformToAPI converts a Terraform encryption model to a Keboola API model.
+func (m *Mapper) MapTerraformToAPI(
 	ctx context.Context,
-	stateModel Model,
+	_ Model,
 	tfModel Model,
 ) (*EncryptResponse, error) {
 	// Create request body
@@ -51,7 +51,7 @@ func (m *EncryptionMapper) MapTerraformToAPI(
 
 	// Call the API to encrypt the value
 	result, err := m.client.EncryptRequest(
-		m.projectId,
+		m.projectID,
 		keboola.ComponentID(tfModel.ComponentID.ValueString()),
 		requestBody,
 	).Send(ctx)
@@ -65,9 +65,9 @@ func (m *EncryptionMapper) MapTerraformToAPI(
 	return &response, nil
 }
 
-// ValidateTerraformModel validates a Terraform model for consistency and constraints.
-func (m *EncryptionMapper) ValidateTerraformModel(
-	ctx context.Context,
+// ValidateTerraformModel validates a Terraform encryption model.
+func (m *Mapper) ValidateTerraformModel(
+	_ context.Context,
 	oldModel *Model,
 	newModel *Model,
 ) diag.Diagnostics {
@@ -82,8 +82,8 @@ func (m *EncryptionMapper) ValidateTerraformModel(
 	}
 
 	// Set defaults for ID if new
-	if oldModel == nil && newModel.Id.IsUnknown() {
-		newModel.Id = types.StringValue("none")
+	if oldModel == nil && newModel.ID.IsUnknown() {
+		newModel.ID = types.StringValue("none")
 	}
 
 	return diags

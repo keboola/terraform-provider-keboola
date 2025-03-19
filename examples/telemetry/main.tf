@@ -62,7 +62,7 @@ resource "keboola_component_configuration" "telemetry_extractor" {
       })
     },
     {
-      name = "Test"
+      name        = "Test"
       description = "Test"
       configuration_row = jsonencode({
         parameters = {

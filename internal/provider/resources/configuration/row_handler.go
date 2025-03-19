@@ -19,7 +19,10 @@ type DefaultConfigRowHandler struct {
 }
 
 // ExtractChildModels extracts row models from the parent configuration model.
-func (h *DefaultConfigRowHandler) ExtractChildModels(ctx context.Context, parent ConfigModel) ([]RowModel, diag.Diagnostics) {
+func (h *DefaultConfigRowHandler) ExtractChildModels(
+	ctx context.Context,
+	parent ConfigModel,
+) ([]RowModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var rows []RowModel
 
@@ -32,9 +35,12 @@ func (h *DefaultConfigRowHandler) ExtractChildModels(ctx context.Context, parent
 	return rows, diags
 }
 
-// MapChildModelsToAPI converts row Terraform models to API models.
-func (h *DefaultConfigRowHandler) MapChildModelsToAPI(ctx context.Context, rowModels []RowModel) ([]*keboola.ConfigRow, error) {
-	var rows []*keboola.ConfigRow
+// MapChildModelsToAPI converts row models to API models.
+func (h *DefaultConfigRowHandler) MapChildModelsToAPI(
+	_ context.Context,
+	rowModels []RowModel,
+) ([]*keboola.ConfigRow, error) {
+	rows := make([]*keboola.ConfigRow, 0, len(rowModels))
 
 	for _, rowModel := range rowModels {
 		// Parse row content
@@ -56,7 +62,7 @@ func (h *DefaultConfigRowHandler) MapChildModelsToAPI(ctx context.Context, rowMo
 		}
 
 		// Create the API row model
-		row := &keboola.ConfigRow{
+		row := &keboola.ConfigRow{ //nolint: exhaustruct
 			Name:              rowModel.Name.ValueString(),
 			Description:       rowModel.Description.ValueString(),
 			ChangeDescription: rowModel.ChangeDescription.ValueString(),
@@ -107,7 +113,7 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 
 		// Process existing rows first, maintaining their order
 		for _, existingRow := range existingRows {
-			rowID := existingRow.ID.ValueString()
+			rowID := existingRow.ID.String()
 			if apiRow, ok := rowMap[rowID]; ok {
 				// Row exists in API response
 				rowModel := createRowModelFromAPI(apiRow, h.isTest)
@@ -130,7 +136,17 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 
 	// Create a new list of rowModels
 	rowType := parent.Rows.Type(ctx)
-	updatedRows, rowDiags := types.ListValueFrom(ctx, rowType.(types.ListType).ElemType, originalRows)
+	elemType, ok := rowType.(types.ListType)
+	if !ok {
+		diags.AddError(
+			"Error processing API child models",
+			"Expected rows to be a list type",
+		)
+
+		return diags
+	}
+
+	updatedRows, rowDiags := types.ListValueFrom(ctx, elemType.ElemType, originalRows)
 	diags.Append(rowDiags...)
 	if !rowDiags.HasError() {
 		parent.Rows = updatedRows
@@ -141,7 +157,7 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 
 // Helper function to create a RowModel from API row.
 func createRowModelFromAPI(apiRow *keboola.ConfigRow, isTest bool) RowModel {
-	rowModel := RowModel{
+	rowModel := RowModel{ //nolint: exhaustruct
 		ID:                types.StringValue(apiRow.ID.String()),
 		Name:              types.StringValue(apiRow.Name),
 		IsDisabled:        types.BoolValue(apiRow.IsDisabled),
@@ -150,43 +166,38 @@ func createRowModelFromAPI(apiRow *keboola.ConfigRow, isTest bool) RowModel {
 		Version:           types.Int64Value(int64(apiRow.Version)),
 	}
 
-	// Handle row state
-	if apiRow.State != nil {
-		stateBytes, err := json.Marshal(apiRow.State)
-		if err == nil {
-			state := string(stateBytes)
-			if isTest {
-				// Clean up newlines for consistent comparison
-				stateBytes, _ = json.MarshalIndent(apiRow.State, "\t\t\t\t\t\t\t", "\t")
-				state = string(stateBytes)
-			}
-			rowModel.State = types.StringValue(state)
-		} else {
-			rowModel.State = types.StringValue("{}")
-		}
-	} else {
-		rowModel.State = types.StringValue("{}")
-	}
-
-	// Handle row content
-	if apiRow.Content != nil {
-		contentBytes, err := json.Marshal(apiRow.Content)
-		if err == nil {
-			content := string(contentBytes)
-			if isTest {
-				// Clean up newlines for consistent comparison
-				contentBytes, _ = json.MarshalIndent(apiRow.Content, "\t\t\t\t\t\t\t", "\t")
-				content = string(contentBytes)
-			}
-			rowModel.Content = types.StringValue(content)
-		} else {
-			rowModel.Content = types.StringValue("{}")
-		}
-	} else {
-		rowModel.Content = types.StringValue("{}")
-	}
+	// Handle row state and content
+	rowModel.State = formatOrderedMapField(apiRow.State, isTest)
+	rowModel.Content = formatOrderedMapField(apiRow.Content, isTest)
 
 	return rowModel
+}
+
+// formatOrderedMapField handles formatting an OrderedMap for a row field.
+func formatOrderedMapField(data *orderedmap.OrderedMap, isTest bool) types.String {
+	// Default to empty JSON object
+	if data == nil {
+		return types.StringValue("{}")
+	}
+
+	// Marshal the data
+	bytes, err := json.Marshal(data)
+	if err != nil {
+		return types.StringValue("{}")
+	}
+
+	formattedValue := string(bytes)
+
+	// Apply test mode formatting if requested
+	if isTest {
+		indentedBytes, err := json.MarshalIndent(data, "\t\t\t\t\t\t\t", "\t")
+		if err == nil {
+			formattedValue = string(indentedBytes)
+		}
+		// If formatting fails in test mode, we still have the original formatting
+	}
+
+	return types.StringValue(formattedValue)
 }
 
 // GetRowsSortOrder returns a slice of row IDs for specifying sort order.

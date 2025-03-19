@@ -55,6 +55,10 @@ linters-settings:
 linters:
   enable-all: true
   disable:
+    - gocognit # Do not abuse with lines of code for TF provider - TODO: remove
+    - funlen # Do not abuse with lines of code for TF provider - TODO: remove
+    - cyclop # Do not abuse with lines of code for TF provider`
+    - gocyclo # Do not abuse with lines of code for TF provider
     - exportloopref # replaced by copyloopvar
     - tenv # replaced by usetesting
     - gofmt
@@ -78,3 +82,17 @@ issues:
     - path: ".*_test.go"
       linters:
         - wrapcheck
+        - exhaustruct
+        - lll
+    - path: "provider.go"
+      linters:
+        - exhaustruct
+    - path: "internal/providermodels/"
+      linters:
+        - exhaustruct
+    - path: "internal/provider/resources/.*/mapper.go"
+      linters:
+        - exhaustruct
+    - path: "internal/provider/resources/.*/resource.go"
+      linters:
+        - exhaustruct

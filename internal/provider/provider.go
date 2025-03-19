@@ -19,13 +19,13 @@ import (
 )
 
 const (
-	KBC_HOST  = "KBC_HOST"
-	KBC_TOKEN = "KBC_TOKEN"
+	KbcHost  = "KBC_HOST"
+	KbcToken = "KBC_TOKEN"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ provider.Provider = &keboolaProvider{}
+	_ provider.Provider = &keboolaProvider{version: "dev"}
 )
 
 // keboolaProvider is the provider implementation.
@@ -49,31 +49,43 @@ func New(version string) func() provider.Provider {
 }
 
 // Metadata returns the provider type name.
-func (p *keboolaProvider) Metadata(ctx context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *keboolaProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "keboola"
 	resp.Version = p.version
 }
 
 // Schema defines the provider-level schema for configuration data.
-func (p *keboolaProvider) Schema(ctx context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *keboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+	hostEnvVar := "URL of the Keboola Connection API. Can be also provided via " +
+		KbcHost + " environment variable."
+	tokenEnvVar := "API Token used to authenticate against the API. Can be also provided via " +
+		KbcToken + " environment variable."
+
 	resp.Schema = schema.Schema{
-		Description: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
+		Description:         "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
+		MarkdownDescription: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
+		Blocks:              map[string]schema.Block{},
+		DeprecationMessage:  "",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Optional:    true,
-				Description: "URL of the Keboola Connection API. Can be also provided via " + KBC_HOST + " environment variable.",
+				Description: hostEnvVar,
 			},
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
-				Description: "API Token used to authenticate against the API. Can be also provided via " + KBC_TOKEN + " environment variable.",
+				Description: tokenEnvVar,
 			},
 		},
 	}
 }
 
 // Configure configures the provider.
-func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+func (p *keboolaProvider) Configure(
+	ctx context.Context,
+	req provider.ConfigureRequest,
+	resp *provider.ConfigureResponse,
+) {
 	tflog.Info(ctx, "Configuring Keboola API client")
 
 	// Get the user-provided configuration
@@ -87,20 +99,28 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// If practitioner provided a configuration value for any of the
 	// attributes, it must be a known value.
 	if config.Host.IsUnknown() {
+		hostErrMsg := "The provider cannot create the Keboola API client as there is an unknown " +
+			"configuration value for the Keboola API host. " +
+			"Either target apply the source of the value first, set the value statically in the configuration, " +
+			"or use the " + KbcHost + " environment variable."
+
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
 			"Unknown Keboola API Host",
-			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API host. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KBC_HOST+" environment variable.",
+			hostErrMsg,
 		)
 	}
 
 	if config.Token.IsUnknown() {
+		tokenErrMsg := "The provider cannot create the Keboola API client as there is an unknown " +
+			"configuration value for the Keboola API token. " +
+			"Either target apply the source of the value first, set the value statically in the configuration, " +
+			"or use the " + KbcToken + " environment variable."
+
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
 			"Unknown Keboola API Token",
-			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API token. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KBC_TOKEN+" environment variable.",
+			tokenErrMsg,
 		)
 	}
 
@@ -110,8 +130,8 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
-	host := os.Getenv(KBC_HOST)
-	token := os.Getenv(KBC_TOKEN)
+	host := os.Getenv(KbcHost)   //nolint: forbidigo
+	token := os.Getenv(KbcToken) //nolint: forbidigo
 
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
@@ -124,22 +144,28 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
 	if host == "" {
+		missingHostMsg := "The provider cannot create the Keboola API client as there is a missing or empty " +
+			"value for the Keboola API host. " +
+			"Set the host value in the configuration or use the " + KbcHost + " environment variable. " +
+			"If either is already set, ensure the value is not empty."
+
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
 			"Missing Keboola API Host",
-			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API host. "+
-				"Set the host value in the configuration or use the "+KBC_HOST+" environment variable. "+
-				"If either is already set, ensure the value is not empty.",
+			missingHostMsg,
 		)
 	}
 
 	if token == "" {
+		missingTokenMsg := "The provider cannot create the Keboola API client as there is a missing or empty " +
+			"value for the Keboola API token. " +
+			"Set the token value in the configuration or use the " + KbcToken + " environment variable. " +
+			"If either is already set, ensure the value is not empty."
+
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
 			"Missing Keboola API token",
-			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API token. "+
-				"Set the token value in the configuration or use the "+KBC_TOKEN+" environment variable. "+
-				"If either is already set, ensure the value is not empty.",
+			missingTokenMsg,
 		)
 	}
 
@@ -187,8 +213,16 @@ func (p *keboolaProvider) DataSources(_ context.Context) []func() datasource.Dat
 
 // Resources defines the resources implemented by the provider.
 func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resource {
+	cResource := func() resource.Resource {
+		return configuration.NewResource()
+	}
+
+	eResource := func() resource.Resource {
+		return encryption.NewResource()
+	}
+
 	return []func() resource.Resource{
-		encryption.NewResource,
-		configuration.NewResource,
+		cResource,
+		eResource,
 	}
 }

@@ -35,7 +35,11 @@ type RowModel struct {
 	Content           types.String `tfsdk:"configuration_row"`
 }
 
-// GetConfigModelId returns the compound ID for a configuration.
-func GetConfigModelId(model *ConfigModel) string {
-	return fmt.Sprintf("%d/%v/%v", model.BranchID.ValueInt64(), model.ComponentID.ValueString(), model.ConfigID.ValueString())
+// GetConfigModelID returns the compound ID for a configuration.
+func GetConfigModelID(model *ConfigModel) string {
+	return fmt.Sprintf("%d/%v/%v",
+		model.BranchID.ValueInt64(),
+		model.ComponentID.ValueString(),
+		model.ConfigID.ValueString(),
+	)
 }

@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	KBC_HOST  = "KBC_HOST"
-	KBC_TOKEN = "KBC_TOKEN"
+	KbcHost  = "KBC_HOST"
+	KbcToken = "KBC_TOKEN"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -44,10 +44,13 @@ type testKeboolaProviderModel struct {
 
 // ProviderConfig returns a provider configuration for testing.
 func ProviderConfig() string {
+	host := os.Getenv("TEST_KBC_HOST")   //nolint: forbidigo
+	token := os.Getenv("TEST_KBC_TOKEN") //nolint: forbidigo
+
 	return `
 provider "keboola" {
-  host  = "` + os.Getenv("TEST_KBC_HOST") + `"
-  token = "` + os.Getenv("TEST_KBC_TOKEN") + `"
+  host  = "` + host + `"
+  token = "` + token + `"
 }
 `
 }
@@ -71,7 +74,7 @@ func New(version string) func() provider.Provider {
 // TestAccPreCheck is a function to run before tests to ensure test environment is properly set up.
 func TestAccPreCheck() {
 	// This can be expanded to check for required environment variables
-	if os.Getenv("TEST_KBC_HOST") == "" || os.Getenv("TEST_KBC_TOKEN") == "" {
+	if os.Getenv("TEST_KBC_HOST") == "" || os.Getenv("TEST_KBC_TOKEN") == "" { //nolint: forbidigo
 		panic("TEST_KBC_HOST and TEST_KBC_TOKEN must be set for acceptance tests")
 	}
 }
@@ -89,19 +92,23 @@ func (p *testKeboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Optional:    true,
-				Description: "URL of the Keboola Connection API. Can be also provided via " + KBC_HOST + " environment variable.",
+				Description: "URL of the Keboola Connection API. Can be also provided via " + KbcHost + " environment variable.",
 			},
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
-				Description: "API Token used to authenticate against the API. Can be also provided via " + KBC_TOKEN + " environment variable.",
+				Description: "API Token used to authenticate against the API. Can be also provided via " + KbcToken + " environment variable.", //nolint: lll
 			},
 		},
 	}
 }
 
 // Configure configures the provider.
-func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+func (p *testKeboolaProvider) Configure(
+	ctx context.Context,
+	req provider.ConfigureRequest,
+	resp *provider.ConfigureResponse,
+) {
 	tflog.Info(ctx, "Configuring Keboola API client for tests")
 
 	// Get the user-provided configuration
@@ -118,8 +125,8 @@ func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.Config
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
 			"Unknown Keboola API Host",
-			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API host. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KBC_HOST+" environment variable.",
+			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API host. "+ //nolint: lll
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KbcHost+" environment variable.", //nolint: lll
 		)
 	}
 
@@ -127,8 +134,8 @@ func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.Config
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
 			"Unknown Keboola API Token",
-			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API token. "+
-				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KBC_TOKEN+" environment variable.",
+			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API token. "+ //nolint: lll
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KbcToken+" environment variable.", //nolint: lll
 		)
 	}
 
@@ -138,8 +145,8 @@ func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.Config
 
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
-	host := os.Getenv(KBC_HOST)
-	token := os.Getenv(KBC_TOKEN)
+	host := os.Getenv(KbcHost)   //nolint: forbidigo
+	token := os.Getenv(KbcToken) //nolint: forbidigo
 
 	if !config.Host.IsNull() {
 		host = config.Host.ValueString()
@@ -156,7 +163,7 @@ func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.Config
 			path.Root("host"),
 			"Missing Keboola API Host",
 			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API host. "+
-				"Set the host value in the configuration or use the "+KBC_HOST+" environment variable. "+
+				"Set the host value in the configuration or use the "+KbcHost+" environment variable. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
@@ -166,7 +173,7 @@ func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.Config
 			path.Root("token"),
 			"Missing Keboola API token",
 			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API token. "+
-				"Set the token value in the configuration or use the "+KBC_TOKEN+" environment variable. "+
+				"Set the token value in the configuration or use the "+KbcToken+" environment variable. "+
 				"If either is already set, ensure the value is not empty.",
 		)
 	}
@@ -217,8 +224,16 @@ func (p *testKeboolaProvider) DataSources(_ context.Context) []func() datasource
 // Resources defines the resources implemented by the provider.
 // This adds resource factories for testing purposes only.
 func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Resource {
+	cResource := func() resource.Resource {
+		return configuration.NewResource()
+	}
+
+	eResource := func() resource.Resource {
+		return encryption.NewResource()
+	}
+
 	return []func() resource.Resource{
-		configuration.NewResource,
-		encryption.NewResource,
+		cResource,
+		eResource,
 	}
 }

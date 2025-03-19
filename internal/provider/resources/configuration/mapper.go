@@ -3,14 +3,22 @@ package configuration
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 	"github.com/keboola/go-utils/pkg/orderedmap"
+)
+
+// Static errors.
+var (
+	ErrExtractPlanRowModels  = errors.New("failed to extract plan row models")
+	ErrExtractStateRowModels = errors.New("failed to extract state row models")
+	ErrParseConfigContent    = errors.New("could not parse configuration content")
+	ErrMapRowModelsToAPI     = errors.New("failed to map row models to API")
 )
 
 // ConfigMapper implements ResourceMapper for configuration resources.
@@ -41,29 +49,11 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	tfModel.Created = types.StringValue(apiModel.Config.Created.UTC().String())
 
 	// Set the compound ID
-	tfModel.ID = types.StringValue(GetConfigModelId(tfModel))
+	tfModel.ID = types.StringValue(GetConfigModelID(tfModel))
 
 	// Map configuration content
-	if apiModel.Config.Content != nil {
-		contentBytes, err := json.Marshal(apiModel.Config.Content)
-		if err != nil {
-			diags.AddWarning(
-				"Error serializing configuration content",
-				"Could not serialize configuration content: "+err.Error(),
-			)
-			tfModel.Content = types.StringValue("{}")
-		}
-		content := string(contentBytes)
-		if m.isTest {
-			// Clean up newlines for consistent comparison
-			contentBytes, _ = json.MarshalIndent(apiModel.Config.Content, "\t\t\t\t\t", "\t")
-			content = string(contentBytes)
-		}
-
-		tfModel.Content = types.StringValue(content)
-	} else {
-		tfModel.Content = types.StringValue("{}")
-	}
+	tfModel.Content = types.StringValue("{}")
+	processConfigContent(apiModel.Config.Content, &tfModel.Content, m.isTest, &diags)
 
 	// Process rows if they exist
 	if len(apiModel.Rows) > 0 {
@@ -101,35 +91,14 @@ func (m *ConfigMapper) MapTerraformToAPI(
 	if !tfModel.Content.IsNull() && !tfModel.Content.IsUnknown() {
 		err := contentMap.UnmarshalJSON([]byte(tfModel.Content.ValueString()))
 		if err != nil {
-			return nil, fmt.Errorf("could not parse configuration content: %w", err)
+			return nil, fmt.Errorf("%w: %w", ErrParseConfigContent, err)
 		}
 	}
 
 	// Process any rows
-	var rows []*keboola.ConfigRow
-	var rowsSortOrder []string
-	var err error
-
-	if !tfModel.Rows.IsNull() {
-		// Extract row models
-		rowModels, diags := m.RowHandler.ExtractChildModels(ctx, tfModel)
-		if diags.HasError() {
-			return nil, fmt.Errorf("failed to extract plan row models: %v", diags)
-		}
-
-		stateRowModels, diags := m.RowHandler.ExtractChildModels(ctx, stateModel)
-		if diags.HasError() {
-			return nil, fmt.Errorf("failed to extract state row models: %v", diags)
-		}
-
-		// Map rows to API models
-		rows, err = m.RowHandler.MapChildModelsToAPI(ctx, rowModels)
-		if err != nil {
-			return nil, fmt.Errorf("failed to map row models to API: %w", err)
-		}
-
-		// Get row sort order
-		rowsSortOrder = m.RowHandler.GetRowsSortOrder(rowModels, stateRowModels)
+	rows, rowsSortOrder, err := m.processRows(ctx, tfModel, stateModel)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create the full API model
@@ -145,13 +114,6 @@ func (m *ConfigMapper) MapTerraformToAPI(
 		},
 		Rows: rows,
 	}
-
-	tflog.Debug(ctx, "Created API model from Terraform model", map[string]interface{}{
-		"config_id":    config.Config.ID,
-		"component_id": config.Config.ComponentID,
-		"rows_count":   len(rows),
-		"sort_order":   rowsSortOrder,
-	})
 
 	return config, nil
 }
@@ -213,34 +175,168 @@ func (m *ConfigMapper) ValidateTerraformModel(
 		newModel.Content = types.StringValue("{}")
 	}
 
+	// Initialize rows
 	rows := []*RowModel{}
+
+	// Process unknown rows
 	if newModel.Rows.IsUnknown() {
-		if oldModel == nil {
-			newModel.Rows, diags = types.ListValue(types.StringType, []attr.Value{})
-		} else {
-			oldModel.Rows.ElementsAs(ctx, &rows, false)
-			for _, row := range rows {
-				if row.ChangeDescription.IsUnknown() {
-					row.ChangeDescription = types.StringValue("Created by Keboola Terraform Provider")
-				}
-			}
-		}
-	} else {
-		newModel.Rows.ElementsAs(ctx, &rows, false)
-		for _, row := range rows {
-			if oldModel == nil {
-				row.ChangeDescription = types.StringValue("Created by Keboola Terraform Provider")
-			} else {
-				row.ChangeDescription = types.StringValue("Updated by Keboola Terraform Provider")
-			}
+		return processUnknownRows(ctx, oldModel, newModel, diags)
+	}
+
+	// Process known rows
+	newModel.Rows.ElementsAs(ctx, &rows, false)
+	setDefaultRowChangeDescriptions(rows, oldModel == nil)
+
+	// Update rows in the model
+	return updateRowsInModel(ctx, newModel, rows, diags)
+}
+
+// processRows processes rows and returns them along with their sort order.
+func (m *ConfigMapper) processRows(
+	ctx context.Context,
+	tfModel ConfigModel,
+	stateModel ConfigModel,
+) ([]*keboola.ConfigRow, []string, error) {
+	// Return empty arrays if Rows is null
+	if tfModel.Rows.IsNull() {
+		return []*keboola.ConfigRow{}, []string{}, nil
+	}
+
+	// Extract row models
+	rowModels, diags := m.RowHandler.ExtractChildModels(ctx, tfModel)
+	if diags.HasError() {
+		return nil, nil, fmt.Errorf("%w: %v", ErrExtractPlanRowModels, diags)
+	}
+
+	stateRowModels, diags := m.RowHandler.ExtractChildModels(ctx, stateModel)
+	if diags.HasError() {
+		return nil, nil, fmt.Errorf("%w: %v", ErrExtractStateRowModels, diags)
+	}
+
+	// Map rows to API models
+	rows, err := m.RowHandler.MapChildModelsToAPI(ctx, rowModels)
+	if err != nil {
+		return nil, nil, fmt.Errorf("%w: %w", ErrMapRowModelsToAPI, err)
+	}
+
+	// Get row sort order
+	rowsSortOrder := m.RowHandler.GetRowsSortOrder(rowModels, stateRowModels)
+
+	return rows, rowsSortOrder, nil
+}
+
+// processConfigContent handles marshaling the configuration content.
+func processConfigContent(
+	content *orderedmap.OrderedMap,
+	targetContent *types.String,
+	isTest bool,
+	diags *diag.Diagnostics,
+) {
+	// Skip if content is nil
+	if content == nil {
+		return
+	}
+
+	// Marshal the content
+	contentBytes, err := json.Marshal(content)
+	if err != nil {
+		diags.AddWarning(
+			"Error serializing configuration content",
+			"Could not serialize configuration content: "+err.Error(),
+		)
+
+		return
+	}
+
+	// Set regular content
+	*targetContent = types.StringValue(string(contentBytes))
+
+	// Apply test mode formatting if needed
+	if isTest {
+		formatContentForTestMode(content, targetContent, diags)
+	}
+}
+
+// formatContentForTestMode handles the special formatting for test mode.
+func formatContentForTestMode(content *orderedmap.OrderedMap, targetContent *types.String, diags *diag.Diagnostics) {
+	indentedBytes, indentErr := json.MarshalIndent(content, "\t\t\t\t\t", "\t")
+	if indentErr != nil {
+		diags.AddWarning(
+			"Error formatting configuration content in test mode",
+			"Could not format configuration content: "+indentErr.Error(),
+		)
+
+		return
+	}
+
+	*targetContent = types.StringValue(string(indentedBytes))
+}
+
+// processUnknownRows handles the case when the rows are unknown.
+func processUnknownRows(
+	ctx context.Context,
+	oldModel *ConfigModel,
+	newModel *ConfigModel,
+	diags diag.Diagnostics,
+) diag.Diagnostics {
+	// If no old model, set empty list
+	if oldModel == nil {
+		var listDiags diag.Diagnostics
+		newModel.Rows, listDiags = types.ListValue(types.StringType, []attr.Value{})
+		diags.Append(listDiags...)
+
+		return diags
+	}
+
+	// Use old model's rows with default change description
+	rows := []*RowModel{}
+	oldModel.Rows.ElementsAs(ctx, &rows, false)
+
+	// Set default change descriptions
+	for _, row := range rows {
+		if row.ChangeDescription.IsUnknown() {
+			row.ChangeDescription = types.StringValue("Created by Keboola Terraform Provider")
 		}
 	}
 
-	rowType := newModel.Rows.Type(ctx)
-	updatedRows, rowDiags := types.ListValueFrom(ctx, rowType.(types.ListType).ElemType, rows)
+	// Update rows in the model
+	return updateRowsInModel(ctx, newModel, rows, diags)
+}
+
+// setDefaultRowChangeDescriptions sets default change descriptions for rows.
+func setDefaultRowChangeDescriptions(rows []*RowModel, isNew bool) {
+	defaultDesc := "Created by Keboola Terraform Provider"
+	if !isNew {
+		defaultDesc = "Updated by Keboola Terraform Provider"
+	}
+
+	for _, row := range rows {
+		row.ChangeDescription = types.StringValue(defaultDesc)
+	}
+}
+
+// updateRowsInModel updates the rows in the model with the provided rows.
+func updateRowsInModel(
+	ctx context.Context,
+	model *ConfigModel,
+	rows []*RowModel,
+	diags diag.Diagnostics,
+) diag.Diagnostics {
+	rowType := model.Rows.Type(ctx)
+	elemType, ok := rowType.(types.ListType)
+	if !ok {
+		diags.AddError(
+			"Error validating configuration",
+			"Expected rows to be a list type",
+		)
+
+		return diags
+	}
+
+	updatedRows, rowDiags := types.ListValueFrom(ctx, elemType.ElemType, rows)
 	diags.Append(rowDiags...)
 	if !rowDiags.HasError() {
-		newModel.Rows = updatedRows
+		model.Rows = updatedRows
 	}
 
 	return diags
