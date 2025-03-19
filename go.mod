@@ -1,4 +1,4 @@
-module terraform-provider-keboola
+module github.com/keboola/terraform-provider-keboola
 
 go 1.24
 

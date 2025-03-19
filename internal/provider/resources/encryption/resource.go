@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"terraform-provider-keboola/internal/provider/abstraction"
-	"terraform-provider-keboola/internal/providermodels"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/abstraction"
+	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
 // Ensure the implementation satisfies the expected interfaces

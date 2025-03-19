@@ -15,7 +15,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/stretchr/testify/require"
 
-	"terraform-provider-keboola/internal/provider_test"
+	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
 )
 
 func exGenericResource(resourceId string, resourceDefinition map[string]any) string {

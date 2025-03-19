@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"terraform-provider-keboola/internal/provider_test"
+	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
 )
 
 // For running the tests, we'll need a provider factory setup which will be defined in the provider package

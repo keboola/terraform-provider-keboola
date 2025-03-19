@@ -16,9 +16,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 
-	"terraform-provider-keboola/internal/provider/resources/configuration"
-	"terraform-provider-keboola/internal/provider/resources/encryption"
-	"terraform-provider-keboola/internal/providermodels"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
+	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
 const KBC_HOST = "KBC_HOST"
