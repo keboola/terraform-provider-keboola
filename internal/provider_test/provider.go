@@ -17,6 +17,7 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 
 	"terraform-provider-keboola/internal/provider/resources/configuration"
+	"terraform-provider-keboola/internal/provider/resources/encryption"
 	"terraform-provider-keboola/internal/providermodels"
 )
 
@@ -214,5 +215,6 @@ func (p *testKeboolaProvider) DataSources(_ context.Context) []func() datasource
 func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
 		configuration.NewResource,
+		encryption.NewResource,
 	}
 }

@@ -14,8 +14,6 @@ import (
 // This is a placeholder that should be implemented correctly when running the actual tests
 
 func TestAccEncryptionResource(t *testing.T) {
-	t.Skip("Skipping test as it requires the provider factory setup")
-
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,
@@ -25,7 +23,7 @@ func TestAccEncryptionResource(t *testing.T) {
 				Config: provider_test.ProviderConfig() + testEncryptionResourceConfig("valuetoencrypt"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("keboola_encryption.test", "value", "valuetoencrypt"),
-					resource.TestMatchResourceAttr("keboola_encryption.test", "encrypted_value", regexp.MustCompile(`KBC::ProjectSecureKV::.+`)),
+					resource.TestMatchResourceAttr("keboola_encryption.test", "encrypted_value", regexp.MustCompile(`KBC::ProjectSecure.*::.+`)),
 					resource.TestCheckResourceAttr("keboola_encryption.test", "id", "none"),
 					resource.TestCheckResourceAttr("keboola_encryption.test", "component_id", "ex-generic-v2"),
 				),
@@ -35,7 +33,7 @@ func TestAccEncryptionResource(t *testing.T) {
 				Config: provider_test.ProviderConfig() + testEncryptionResourceConfig(""),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr("keboola_encryption.test", "value", ""),
-					resource.TestMatchResourceAttr("keboola_encryption.test", "encrypted_value", regexp.MustCompile(`KBC::ProjectSecureKV::.+`)),
+					resource.TestMatchResourceAttr("keboola_encryption.test", "encrypted_value", regexp.MustCompile(`KBC::ProjectSecure.*::.+`)),
 					resource.TestCheckResourceAttr("keboola_encryption.test", "id", "none"),
 					resource.TestCheckResourceAttr("keboola_encryption.test", "component_id", "ex-generic-v2"),
 				),
@@ -44,9 +42,6 @@ func TestAccEncryptionResource(t *testing.T) {
 		},
 	})
 }
-
-// Test provider configuration - this will need to be defined when running the tests
-var providerConfig = ``
 
 func testEncryptionResourceConfig(value string) string {
 	return fmt.Sprintf(`

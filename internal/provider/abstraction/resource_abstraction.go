@@ -48,7 +48,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	resp *resource.CreateResponse,
 	createFn func(ctx context.Context, model TfModel) (ApiModel, error),
 ) {
-	tflog.Debug(ctx, "Starting resource create operation")
+	tflog.Info(ctx, "Starting resource create operation")
 
 	// Get plan data
 	var plan TfModel
@@ -86,7 +86,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 
-	tflog.Debug(ctx, "Completed resource create operation")
+	tflog.Info(ctx, "Completed resource create operation")
 }
 
 // ExecuteRead executes the read operation with proper error handling and mapping
@@ -96,7 +96,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 	resp *resource.ReadResponse,
 	readFn func(ctx context.Context, model TfModel) (ApiModel, error),
 ) {
-	tflog.Debug(ctx, "Starting resource read operation")
+	tflog.Info(ctx, "Starting resource read operation")
 
 	// Get current state
 	var state TfModel
@@ -127,7 +127,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 
-	tflog.Debug(ctx, "Completed resource read operation")
+	tflog.Info(ctx, "Completed resource read operation")
 }
 
 // ExecuteUpdate executes the update operation with proper error handling and mapping
@@ -137,7 +137,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	resp *resource.UpdateResponse,
 	updateFn func(ctx context.Context, state TfModel, plan TfModel) (ApiModel, error),
 ) {
-	tflog.Debug(ctx, "Starting resource update operation")
+	tflog.Info(ctx, "Starting resource update operation")
 
 	// Get plan and state
 	var plan, state TfModel
@@ -181,7 +181,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	diags = resp.State.Set(ctx, plan)
 	resp.Diagnostics.Append(diags...)
 
-	tflog.Debug(ctx, "Completed resource update operation")
+	tflog.Info(ctx, "Completed resource update operation")
 }
 
 // ExecuteDelete executes the delete operation with proper error handling
@@ -191,7 +191,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteDelete(
 	resp *resource.DeleteResponse,
 	deleteFn func(ctx context.Context, model TfModel) error,
 ) {
-	tflog.Debug(ctx, "Starting resource delete operation")
+	tflog.Info(ctx, "Starting resource delete operation")
 
 	// Get current state
 	var state TfModel
@@ -211,7 +211,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteDelete(
 		return
 	}
 
-	tflog.Debug(ctx, "Completed resource delete operation")
+	tflog.Info(ctx, "Completed resource delete operation")
 }
 
 // HandleNestedResources is a helper for processing nested resources
