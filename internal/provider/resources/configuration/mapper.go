@@ -13,18 +13,10 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
-// ConfigRowHandler handles configuration row operations
-type ConfigRowHandler interface {
-	ExtractChildModels(ctx context.Context, parent ConfigModel) ([]RowModel, diag.Diagnostics)
-	MapChildModelsToAPI(ctx context.Context, childModels []RowModel) ([]*keboola.ConfigRow, error)
-	ProcessAPIChildModels(ctx context.Context, parent *ConfigModel, apiRows []*keboola.ConfigRow) diag.Diagnostics
-	GetRowsSortOrder(rowModels, stateModels []RowModel) []string
-}
-
 // ConfigMapper implements ResourceMapper for configuration resources
 type ConfigMapper struct {
 	// Nested resource handler for rows
-	RowHandler ConfigRowHandler
+	RowHandler *DefaultConfigRowHandler
 	isTest     bool
 }
 
