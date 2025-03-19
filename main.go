@@ -4,7 +4,8 @@ import (
 	"context"
 	"flag"
 	"log"
-	"terraform-provider-keboola/internal/provider"
+
+	"github.com/keboola/terraform-provider-keboola/internal/provider"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
