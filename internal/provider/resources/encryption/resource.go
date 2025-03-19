@@ -125,8 +125,13 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		// If the value is empty, keep the previous encrypted value
 		if plan.Value.ValueString() == "" {
 			tflog.Info(ctx, "Value is empty, keeping previous encrypted value")
-			plan.EncryptedValue = state.EncryptedValue
-			return nil, nil
+
+			// Return a proper response with the existing encrypted value
+			// For encryption resources, we're only concerned about the #value field
+			response := EncryptResponse{
+				"#value": state.EncryptedValue.ValueString(),
+			}
+			return &response, nil
 		}
 
 		// Handle API call from the mapper
