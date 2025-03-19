@@ -9,19 +9,19 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-// ResourceMapper defines the interface for mapping between API and Terraform models
+// ResourceMapper defines the interface for mapping between API and Terraform models.
 type ResourceMapper[TfModel any, ApiModel any] interface {
 	// MapAPIToTerraform converts an API model to a Terraform model
 	MapAPIToTerraform(ctx context.Context, apiModel ApiModel, tfModel *TfModel) diag.Diagnostics
 
 	// MapTerraformToAPI converts a Terraform model to an API model
-	MapTerraformToAPI(ctx context.Context, stateModel TfModel, tfModel TfModel) (ApiModel, error)
+	MapTerraformToAPI(ctx context.Context, stateModel, tfModel TfModel) (ApiModel, error)
 
 	// ValidateTerraformModel validates a Terraform model against constraints
-	ValidateTerraformModel(ctx context.Context, oldModel *TfModel, newModel *TfModel) diag.Diagnostics
+	ValidateTerraformModel(ctx context.Context, oldModel, newModel *TfModel) diag.Diagnostics
 }
 
-// NestedResourceHandler handles operations for nested resources within a parent resource
+// NestedResourceHandler handles operations for nested resources within a parent resource.
 type NestedResourceHandler[ParentTfModel any, ChildTfModel any, ParentApiModel any, ChildApiModel any] interface {
 	// ExtractChildModels extracts child models from parent Terraform model
 	ExtractChildModels(ctx context.Context, parent ParentTfModel) ([]ChildTfModel, diag.Diagnostics)
@@ -33,7 +33,7 @@ type NestedResourceHandler[ParentTfModel any, ChildTfModel any, ParentApiModel a
 	ProcessAPIChildModels(ctx context.Context, parent *ParentTfModel, childApiModels []ChildApiModel) diag.Diagnostics
 }
 
-// BaseResource provides common functionality for resources with generic CRUD operations
+// BaseResource provides common functionality for resources with generic CRUD operations.
 type BaseResource[TfModel any, ApiModel any] struct {
 	Mapper ResourceMapper[TfModel, ApiModel]
 
@@ -41,7 +41,7 @@ type BaseResource[TfModel any, ApiModel any] struct {
 	NestedHandler any // Type will be cast based on context
 }
 
-// ExecuteCreate executes the create operation with proper error handling and mapping
+// ExecuteCreate executes the create operation with proper error handling and mapping.
 func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	ctx context.Context,
 	req resource.CreateRequest,
@@ -70,8 +70,9 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error creating resource",
-			fmt.Sprintf("Could not create resource: %s", err.Error()),
+			"Could not create resource: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -89,7 +90,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	tflog.Info(ctx, "Completed resource create operation")
 }
 
-// ExecuteRead executes the read operation with proper error handling and mapping
+// ExecuteRead executes the read operation with proper error handling and mapping.
 func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 	ctx context.Context,
 	req resource.ReadRequest,
@@ -111,8 +112,9 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error reading resource",
-			fmt.Sprintf("Could not read resource: %s", err.Error()),
+			"Could not read resource: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -130,12 +132,12 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 	tflog.Info(ctx, "Completed resource read operation")
 }
 
-// ExecuteUpdate executes the update operation with proper error handling and mapping
+// ExecuteUpdate executes the update operation with proper error handling and mapping.
 func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	ctx context.Context,
 	req resource.UpdateRequest,
 	resp *resource.UpdateResponse,
-	updateFn func(ctx context.Context, state TfModel, plan TfModel) (ApiModel, error),
+	updateFn func(ctx context.Context, state, plan TfModel) (ApiModel, error),
 ) {
 	tflog.Info(ctx, "Starting resource update operation")
 
@@ -165,8 +167,9 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error updating resource",
-			fmt.Sprintf("Could not update resource: %s", err.Error()),
+			"Could not update resource: "+err.Error(),
 		)
+
 		return
 	}
 
@@ -184,7 +187,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	tflog.Info(ctx, "Completed resource update operation")
 }
 
-// ExecuteDelete executes the delete operation with proper error handling
+// ExecuteDelete executes the delete operation with proper error handling.
 func (r *BaseResource[TfModel, ApiModel]) ExecuteDelete(
 	ctx context.Context,
 	req resource.DeleteRequest,
@@ -206,15 +209,16 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteDelete(
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Error deleting resource",
-			fmt.Sprintf("Could not delete resource: %s", err.Error()),
+			"Could not delete resource: "+err.Error(),
 		)
+
 		return
 	}
 
 	tflog.Info(ctx, "Completed resource delete operation")
 }
 
-// HandleNestedResources is a helper for processing nested resources
+// HandleNestedResources is a helper for processing nested resources.
 func HandleNestedResources[ParentTfModel, ChildTfModel, ParentApiModel, ChildApiModel any](
 	ctx context.Context,
 	handler NestedResourceHandler[ParentTfModel, ChildTfModel, ParentApiModel, ChildApiModel],

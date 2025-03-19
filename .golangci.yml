@@ -56,6 +56,7 @@ linters:
   enable-all: true
   disable:
     - exportloopref # replaced by copyloopvar
+    - tenv # replaced by usetesting
     - gofmt
     - goimports
     - gomoddirectives

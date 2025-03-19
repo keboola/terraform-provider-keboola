@@ -13,14 +13,14 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
-// ConfigMapper implements ResourceMapper for configuration resources
+// ConfigMapper implements ResourceMapper for configuration resources.
 type ConfigMapper struct {
 	// Nested resource handler for rows
 	RowHandler *DefaultConfigRowHandler
 	isTest     bool
 }
 
-// MapAPIToTerraform converts a Keboola API config model to a Terraform model
+// MapAPIToTerraform converts a Keboola API config model to a Terraform model.
 func (m *ConfigMapper) MapAPIToTerraform(
 	ctx context.Context,
 	apiModel *keboola.ConfigWithRows,
@@ -49,7 +49,7 @@ func (m *ConfigMapper) MapAPIToTerraform(
 		if err != nil {
 			diags.AddWarning(
 				"Error serializing configuration content",
-				fmt.Sprintf("Could not serialize configuration content: %s", err.Error()),
+				"Could not serialize configuration content: "+err.Error(),
 			)
 			tfModel.Content = types.StringValue("{}")
 		}
@@ -61,7 +61,6 @@ func (m *ConfigMapper) MapAPIToTerraform(
 		}
 
 		tfModel.Content = types.StringValue(content)
-
 	} else {
 		tfModel.Content = types.StringValue("{}")
 	}
@@ -75,7 +74,7 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	return diags
 }
 
-// MapTerraformToAPI converts a Terraform model to a Keboola API model
+// MapTerraformToAPI converts a Terraform model to a Keboola API model.
 func (m *ConfigMapper) MapTerraformToAPI(
 	ctx context.Context,
 	stateModel ConfigModel,
@@ -157,7 +156,7 @@ func (m *ConfigMapper) MapTerraformToAPI(
 	return config, nil
 }
 
-// ValidateTerraformModel validates a Terraform model for consistency and constraints
+// ValidateTerraformModel validates a Terraform model for consistency and constraints.
 func (m *ConfigMapper) ValidateTerraformModel(
 	ctx context.Context,
 	oldModel *ConfigModel,
@@ -196,7 +195,7 @@ func (m *ConfigMapper) ValidateTerraformModel(
 		if err != nil {
 			diags.AddError(
 				"Error validating configuration",
-				fmt.Sprintf("Could not parse configuration JSON: %s", err.Error()),
+				"Could not parse configuration JSON: "+err.Error(),
 			)
 		}
 	}

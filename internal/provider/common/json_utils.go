@@ -7,7 +7,7 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
-// ParseJSON parses a JSON string into an orderedmap
+// ParseJSON parses a JSON string into an orderedmap.
 func ParseJSON(jsonStr types.String) (*orderedmap.OrderedMap, error) {
 	if jsonStr.IsNull() || jsonStr.IsUnknown() {
 		return orderedmap.New(), nil
@@ -18,10 +18,11 @@ func ParseJSON(jsonStr types.String) (*orderedmap.OrderedMap, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
 	}
+
 	return contentMap, nil
 }
 
-// SerializeJSON serializes an orderedmap to a JSON string
+// SerializeJSON serializes an orderedmap to a JSON string.
 func SerializeJSON(contentMap *orderedmap.OrderedMap) (types.String, error) {
 	if contentMap == nil {
 		return types.StringValue("{}"), nil
@@ -31,5 +32,6 @@ func SerializeJSON(contentMap *orderedmap.OrderedMap) (types.String, error) {
 	if err != nil {
 		return types.StringNull(), fmt.Errorf("failed to serialize JSON: %w", err)
 	}
+
 	return types.StringValue(string(contentBytes)), nil
 }

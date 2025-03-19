@@ -21,15 +21,17 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
-const KBC_HOST = "KBC_HOST"
-const KBC_TOKEN = "KBC_TOKEN"
+const (
+	KBC_HOST  = "KBC_HOST"
+	KBC_TOKEN = "KBC_TOKEN"
+)
 
-// Ensure the implementation satisfies the expected interfaces
+// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ provider.Provider = &testKeboolaProvider{}
 )
 
-// testKeboolaProvider is a simplified provider implementation for testing
+// testKeboolaProvider is a simplified provider implementation for testing.
 type testKeboolaProvider struct {
 	version string
 }
@@ -40,7 +42,7 @@ type testKeboolaProviderModel struct {
 	Token types.String `tfsdk:"token"`
 }
 
-// ProviderConfig returns a provider configuration for testing
+// ProviderConfig returns a provider configuration for testing.
 func ProviderConfig() string {
 	return `
 provider "keboola" {
@@ -50,14 +52,14 @@ provider "keboola" {
 `
 }
 
-// TestAccProtoV6ProviderFactories returns a map of provider server factories for testing
+// TestAccProtoV6ProviderFactories returns a map of provider server factories for testing.
 func TestAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"keboola": providerserver.NewProtocol6WithError(New("test")()),
 	}
 }
 
-// New creates a new provider instance for testing
+// New creates a new provider instance for testing.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &testKeboolaProvider{
@@ -66,7 +68,7 @@ func New(version string) func() provider.Provider {
 	}
 }
 
-// TestAccPreCheck is a function to run before tests to ensure test environment is properly set up
+// TestAccPreCheck is a function to run before tests to ensure test environment is properly set up.
 func TestAccPreCheck() {
 	// This can be expanded to check for required environment variables
 	if os.Getenv("TEST_KBC_HOST") == "" || os.Getenv("TEST_KBC_TOKEN") == "" {
@@ -181,12 +183,14 @@ func (p *testKeboolaProvider) Configure(ctx context.Context, req provider.Config
 	sapiClient, err := keboola.NewAuthorizedAPI(ctx, host, token)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
+
 		return
 	}
 
 	tokenObject, err := sapiClient.VerifyTokenRequest(token).Send(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client, given token is invalid:", err.Error())
+
 		return
 	}
 

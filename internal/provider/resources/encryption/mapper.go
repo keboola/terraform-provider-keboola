@@ -9,16 +9,16 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 )
 
-// EncryptResponse is a simple wrapper around the map response from the API
+// EncryptResponse is a simple wrapper around the map response from the API.
 type EncryptResponse map[string]string
 
-// EncryptionMapper implements ResourceMapper for encryption resources
+// EncryptionMapper implements ResourceMapper for encryption resources.
 type EncryptionMapper struct {
 	client    *keboola.AuthorizedAPI
 	projectId int
 }
 
-// MapAPIToTerraform converts a Keboola API EncryptResponse to a Terraform model
+// MapAPIToTerraform converts a Keboola API EncryptResponse to a Terraform model.
 func (m *EncryptionMapper) MapAPIToTerraform(
 	ctx context.Context,
 	apiModel *EncryptResponse,
@@ -38,7 +38,7 @@ func (m *EncryptionMapper) MapAPIToTerraform(
 	return diags
 }
 
-// MapTerraformToAPI converts a Terraform model to a Keboola API EncryptResponse
+// MapTerraformToAPI converts a Terraform model to a Keboola API EncryptResponse.
 func (m *EncryptionMapper) MapTerraformToAPI(
 	ctx context.Context,
 	stateModel Model,
@@ -55,17 +55,17 @@ func (m *EncryptionMapper) MapTerraformToAPI(
 		keboola.ComponentID(tfModel.ComponentID.ValueString()),
 		requestBody,
 	).Send(ctx)
-
 	if err != nil {
 		return nil, fmt.Errorf("failed to encrypt value: %w", err)
 	}
 
 	// Convert to our custom response type
 	response := EncryptResponse(*result)
+
 	return &response, nil
 }
 
-// ValidateTerraformModel validates a Terraform model for consistency and constraints
+// ValidateTerraformModel validates a Terraform model for consistency and constraints.
 func (m *EncryptionMapper) ValidateTerraformModel(
 	ctx context.Context,
 	oldModel *Model,

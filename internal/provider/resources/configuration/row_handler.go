@@ -11,14 +11,14 @@ import (
 	"github.com/keboola/go-utils/pkg/orderedmap"
 )
 
-// DefaultConfigRowHandler implements ConfigRowHandler interface
+// DefaultConfigRowHandler implements ConfigRowHandler interface.
 type DefaultConfigRowHandler struct {
 	// Pointer to the parent resource's client
 	Client *keboola.AuthorizedAPI
 	isTest bool
 }
 
-// ExtractChildModels extracts row models from the parent configuration model
+// ExtractChildModels extracts row models from the parent configuration model.
 func (h *DefaultConfigRowHandler) ExtractChildModels(ctx context.Context, parent ConfigModel) ([]RowModel, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var rows []RowModel
@@ -28,10 +28,11 @@ func (h *DefaultConfigRowHandler) ExtractChildModels(ctx context.Context, parent
 	}
 
 	diags = parent.Rows.ElementsAs(ctx, &rows, false)
+
 	return rows, diags
 }
 
-// MapChildModelsToAPI converts row Terraform models to API models
+// MapChildModelsToAPI converts row Terraform models to API models.
 func (h *DefaultConfigRowHandler) MapChildModelsToAPI(ctx context.Context, rowModels []RowModel) ([]*keboola.ConfigRow, error) {
 	var rows []*keboola.ConfigRow
 
@@ -75,7 +76,7 @@ func (h *DefaultConfigRowHandler) MapChildModelsToAPI(ctx context.Context, rowMo
 	return rows, nil
 }
 
-// ProcessAPIChildModels processes row API models after API operations
+// ProcessAPIChildModels processes row API models after API operations.
 func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 	ctx context.Context,
 	parent *ConfigModel,
@@ -138,7 +139,7 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 	return diags
 }
 
-// Helper function to create a RowModel from API row
+// Helper function to create a RowModel from API row.
 func createRowModelFromAPI(apiRow *keboola.ConfigRow, isTest bool) RowModel {
 	rowModel := RowModel{
 		ID:                types.StringValue(apiRow.ID.String()),
@@ -188,7 +189,7 @@ func createRowModelFromAPI(apiRow *keboola.ConfigRow, isTest bool) RowModel {
 	return rowModel
 }
 
-// GetRowsSortOrder returns a slice of row IDs for specifying sort order
+// GetRowsSortOrder returns a slice of row IDs for specifying sort order.
 func (h *DefaultConfigRowHandler) GetRowsSortOrder(rowModels, stateModels []RowModel) []string {
 	// We do not change rows when plan has less rows than state (we are deleting rows)
 	if len(rowModels) < len(stateModels) {
@@ -201,5 +202,6 @@ func (h *DefaultConfigRowHandler) GetRowsSortOrder(rowModels, stateModels []RowM
 			rowsSortOrder = append(rowsSortOrder, rowModel.ID.ValueString())
 		}
 	}
+
 	return rowsSortOrder
 }

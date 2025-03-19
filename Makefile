@@ -7,7 +7,23 @@ install:
 	go install .
 
 lint:
-	golangci-lint run
+	golangci-lint run -c "./.golangci.yml"
+
+fix:
+	@echo "Running go mod tidy ..."
+	go mod tidy
+	
+	@echo "Running go mod vendor ..."
+	go mod vendor
+	
+	@echo "Running gofumpt ..."
+	gofumpt -w ./internal
+	
+	@echo "Running gci ..."
+	gci write --skip-generated -s standard -s default -s "prefix(github.com/keboola/terraform-provider-keboola)" ./internal
+	
+	@echo "Running golangci-lint ..."
+	golangci-lint run --fix -c "./.golangci.yml"
 
 test:
 	go test -count=1 -parallel=4 ./...

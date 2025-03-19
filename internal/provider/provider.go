@@ -18,10 +18,12 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
-const KBC_HOST = "KBC_HOST"
-const KBC_TOKEN = "KBC_TOKEN"
+const (
+	KBC_HOST  = "KBC_HOST"
+	KBC_TOKEN = "KBC_TOKEN"
+)
 
-// Ensure the implementation satisfies the expected interfaces
+// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ provider.Provider = &keboolaProvider{}
 )
@@ -37,7 +39,7 @@ type keboolaProviderModel struct {
 	Token types.String `tfsdk:"token"`
 }
 
-// New creates a new provider instance
+// New creates a new provider instance.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
 		return &keboolaProvider{
@@ -153,12 +155,14 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	sapiClient, err := keboola.NewAuthorizedAPI(ctx, host, token)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
+
 		return
 	}
 
 	tokenObject, err := sapiClient.VerifyTokenRequest(token).Send(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client, given token is invalid:", err.Error())
+
 		return
 	}
 

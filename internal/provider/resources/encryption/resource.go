@@ -14,18 +14,18 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
-// Ensure the implementation satisfies the expected interfaces
+// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource              = &Resource{}
 	_ resource.ResourceWithConfigure = &Resource{}
 )
 
-// NewResource is a helper function to simplify the provider implementation
+// NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return &Resource{}
 }
 
-// Resource is the encryption resource implementation
+// Resource is the encryption resource implementation.
 type Resource struct {
 	// Base functionality with encryption model specifics
 	base abstraction.BaseResource[Model, *EncryptResponse]
@@ -35,12 +35,12 @@ type Resource struct {
 	projectId int
 }
 
-// Metadata returns the resource type name
+// Metadata returns the resource type name.
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_encryption"
 }
 
-// Schema defines the schema for the resource
+// Schema defines the schema for the resource.
 func (r *Resource) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server
@@ -72,7 +72,7 @@ func (r *Resource) Schema(_ context.Context, req resource.SchemaRequest, resp *r
 	}
 }
 
-// Configure adds the provider configured client to the resource
+// Configure adds the provider configured client to the resource.
 func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Return silently if provider data is not available (yet)
 	if req.ProviderData == nil {
@@ -93,7 +93,7 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, r
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state
+// Create creates the resource and sets the initial Terraform state.
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	tflog.Info(ctx, "Creating encryption resource")
 
@@ -104,7 +104,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	})
 }
 
-// Read refreshes the Terraform state with the latest data
+// Read refreshes the Terraform state with the latest data.
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Info(ctx, "Reading encryption resource")
 
@@ -116,12 +116,12 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	})
 }
 
-// Update updates the resource and sets the updated Terraform state
+// Update updates the resource and sets the updated Terraform state.
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	tflog.Info(ctx, "Updating encryption resource")
 
 	// Use the base resource abstraction for Update
-	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state Model, plan Model) (*EncryptResponse, error) {
+	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state, plan Model) (*EncryptResponse, error) {
 		// If the value is empty, keep the previous encrypted value
 		if plan.Value.ValueString() == "" {
 			tflog.Info(ctx, "Value is empty, keeping previous encrypted value")
@@ -131,6 +131,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 			response := EncryptResponse{
 				"#value": state.EncryptedValue.ValueString(),
 			}
+
 			return &response, nil
 		}
 
@@ -139,7 +140,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	})
 }
 
-// Delete deletes the resource and removes the Terraform state
+// Delete deletes the resource and removes the Terraform state.
 func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Info(ctx, "Deleting encryption resource")
 

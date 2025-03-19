@@ -17,18 +17,18 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
-// Ensure the implementation satisfies the expected interfaces
+// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource              = &Resource{}
 	_ resource.ResourceWithConfigure = &Resource{}
 )
 
-// NewResource is a helper function to simplify the provider implementation
+// NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return &Resource{}
 }
 
-// Resource is the configuration resource implementation
+// Resource is the configuration resource implementation.
 type Resource struct {
 	// Base functionality with config model specifics
 	base abstraction.BaseResource[ConfigModel, *keboola.ConfigWithRows]
@@ -38,12 +38,12 @@ type Resource struct {
 	isTest bool
 }
 
-// Metadata returns the resource type name
+// Metadata returns the resource type name.
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_component_configuration"
 }
 
-// Schema defines the schema for the resource
+// Schema defines the schema for the resource.
 func (r *Resource) Schema(ctx context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Manages component configurations (https://keboola.docs.apiary.io/#reference/components-and-configurations).",
@@ -157,7 +157,7 @@ func (r *Resource) Schema(ctx context.Context, req resource.SchemaRequest, resp 
 	}
 }
 
-// Configure adds the provider configured client to the resource
+// Configure adds the provider configured client to the resource.
 func (r *Resource) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	// Return silently if provider data is not available (yet)
 	if req.ProviderData == nil {
@@ -179,7 +179,7 @@ func (r *Resource) Configure(ctx context.Context, req resource.ConfigureRequest,
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state
+// Create creates the resource and sets the initial Terraform state.
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	tflog.Info(ctx, "Creating configuration resource")
 
@@ -210,7 +210,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	})
 }
 
-// Read resource information
+// Read resource information.
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Info(ctx, "Reading configuration resource")
 
@@ -252,12 +252,12 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	})
 }
 
-// Update updates the resource
+// Update updates the resource.
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	tflog.Info(ctx, "Updating configuration resource")
 
 	// Use the base resource abstraction for Update
-	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state ConfigModel, plan ConfigModel) (*keboola.ConfigWithRows, error) {
+	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state, plan ConfigModel) (*keboola.ConfigWithRows, error) {
 		// Preserve branch, component, and config IDs from state
 		plan.BranchID = state.BranchID
 		plan.ComponentID = state.ComponentID
@@ -279,7 +279,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	})
 }
 
-// Delete deletes the resource
+// Delete deletes the resource.
 func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Info(ctx, "Deleting configuration resource")
 

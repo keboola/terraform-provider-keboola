@@ -8,42 +8,45 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 )
 
-// ProviderData is a shared type to hold provider data that can be accessed by both
-// the provider and resources without creating circular dependencies
+// the provider and resources without creating circular dependencies.
 type ProviderData struct {
 	Client *keboola.AuthorizedAPI
 	Token  *keboola.Token
 }
 
-// GetClient returns the keboola API client
+// GetClient returns the keboola API client.
 func (p *ProviderData) GetClient() *keboola.AuthorizedAPI {
 	return p.Client
 }
 
-// GetToken returns the token details
+// GetToken returns the token details.
 func (p *ProviderData) GetToken() *keboola.Token {
 	return p.Token
 }
 
-// IsValid checks if the provider data is valid and logs info about it
+// IsValid checks if the provider data is valid and logs info about it.
 func (p *ProviderData) IsValid(ctx context.Context) bool {
 	if p == nil {
 		tflog.Error(ctx, "ProviderData is nil")
+
 		return false
 	}
 
 	if p.Client == nil {
 		tflog.Error(ctx, "ProviderData.Client is nil")
+
 		return false
 	}
 
 	if p.Token == nil {
 		tflog.Error(ctx, "ProviderData.Token is nil")
+
 		return false
 	}
 
 	tflog.Info(ctx, "ProviderData is valid", map[string]interface{}{
 		"projectId": p.Token.ProjectID(),
 	})
+
 	return true
 }
