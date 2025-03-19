@@ -1,5 +1,3 @@
-
-
 default: install
 
 generate-docs:
@@ -45,10 +43,31 @@ test-config-destroy: install
 	terraform -chdir="./examples/resources/keboola_component_configuration" apply -destroy -auto-approve
 test-config-show-state: install
 	terraform -chdir="./examples/resources/keboola_component_configuration" state show keboola_component_configuration.ex_generic_test
+
 test-config: test-config-destroy test-config-apply test-config-apply test-config-show-state
+
+test-telemetry-init: install
+	terraform -chdir="./examples/telemetry" init
+
+test-telemetry-plan: install test-telemetry-init
+	TF_LOG=info terraform -chdir="./examples/telemetry" plan
+
+test-telemetry-apply: install test-telemetry-init
+	TF_LOG=info terraform -chdir="./examples/telemetry" apply -auto-approve
+
+test-telemetry-destroy: install test-telemetry-init
+	terraform -chdir="./examples/telemetry" apply -destroy -auto-approve
+
+test-telemetry-show-state: install
+	terraform -chdir="./examples/telemetry" state show keboola_component_configuration_row.telemetry_extractor
+
+test-telemetry: test-telemetry-destroy test-telemetry-apply test-telemetry-show-state
 
 clean-examples-state:
 	rm -r ./examples/**/**/*tfstate* || true
+	rm -r ./examples/**/**/.terraform.lock.hcl || true
 	rm -rf ./examples/**/**/.terraform*
 
 clean: clean-examples-state
+
+	rm -rf ./examples/**/**/.terraform*
