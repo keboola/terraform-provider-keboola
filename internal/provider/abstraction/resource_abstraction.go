@@ -15,7 +15,7 @@ type ResourceMapper[TfModel any, ApiModel any] interface {
 	MapAPIToTerraform(ctx context.Context, apiModel ApiModel, tfModel *TfModel) diag.Diagnostics
 
 	// MapTerraformToAPI converts a Terraform model to an API model
-	MapTerraformToAPI(ctx context.Context, tfModel TfModel) (ApiModel, error)
+	MapTerraformToAPI(ctx context.Context, stateModel TfModel, tfModel TfModel) (ApiModel, error)
 
 	// ValidateTerraformModel validates a Terraform model against constraints
 	ValidateTerraformModel(ctx context.Context, oldModel *TfModel, newModel *TfModel) diag.Diagnostics

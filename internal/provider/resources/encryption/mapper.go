@@ -41,6 +41,7 @@ func (m *EncryptionMapper) MapAPIToTerraform(
 // MapTerraformToAPI converts a Terraform model to a Keboola API EncryptResponse
 func (m *EncryptionMapper) MapTerraformToAPI(
 	ctx context.Context,
+	stateModel Model,
 	tfModel Model,
 ) (*EncryptResponse, error) {
 	// Create request body

@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 
+	"github.com/keboola/terraform-provider-keboola/internal/provider/abstraction"
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
@@ -30,9 +31,7 @@ func NewResource() resource.Resource {
 // Resource is the configuration resource implementation
 type Resource struct {
 	// Base functionality with config model specifics
-	base struct {
-		mapper ConfigMapper
-	}
+	base abstraction.BaseResource[ConfigModel, *keboola.ConfigWithRows]
 
 	// Direct access to the API client for specific operations
 	client *keboola.AuthorizedAPI
@@ -171,7 +170,7 @@ func (r *Resource) Configure(ctx context.Context, req resource.ConfigureRequest,
 	r.isTest = os.Getenv("TF_ACC") != ""
 
 	// Set up the mapper
-	r.base.mapper = ConfigMapper{
+	r.base.Mapper = &ConfigMapper{
 		RowHandler: &DefaultConfigRowHandler{
 			Client: r.client,
 			isTest: r.isTest,
@@ -184,217 +183,122 @@ func (r *Resource) Configure(ctx context.Context, req resource.ConfigureRequest,
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	tflog.Info(ctx, "Creating configuration resource")
 
-	// Get plan data
-	var plan ConfigModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Validate the plan
-	diags = r.base.mapper.ValidateTerraformModel(ctx, nil, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Handle default branch if not specified
-	if plan.BranchID.IsUnknown() {
-		branch, err := r.client.GetDefaultBranchRequest().Send(ctx)
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating configuration",
-				fmt.Sprintf("Could not get default branch: %s", err.Error()),
-			)
-			return
+	// Use the base resource abstraction for Create
+	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, plan ConfigModel) (*keboola.ConfigWithRows, error) {
+		// Handle default branch if not specified
+		if plan.BranchID.IsUnknown() {
+			branch, err := r.client.GetDefaultBranchRequest().Send(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("could not get default branch: %w", err)
+			}
+			plan.BranchID = types.Int64Value(int64(branch.ID))
 		}
-		plan.BranchID = types.Int64Value(int64(branch.ID))
-	}
 
-	// Convert to API model
-	apiModel, err := r.base.mapper.MapTerraformToAPI(ctx, ConfigModel{}, plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating configuration",
-			fmt.Sprintf("Failed to map Terraform model to API: %s", err.Error()),
-		)
-		return
-	}
+		// Convert to API model
+		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, ConfigModel{}, plan)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
+		}
 
-	// Create configuration via API
-	resConfig, err := r.client.CreateConfigRequest(apiModel).Send(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating configuration",
-			fmt.Sprintf("Could not create configuration: %s", err.Error()),
-		)
-		return
-	}
+		// Create configuration via API
+		resConfig, err := r.client.CreateConfigRequest(apiModel).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("could not create configuration: %w", err)
+		}
 
-	// Map API model back to Terraform model
-	diags = r.base.mapper.MapAPIToTerraform(ctx, resConfig, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Set state
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+		// Return config with rows for mapping back to terraform model
+		return resConfig, nil
+	})
 }
 
 // Read resource information
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Info(ctx, "Reading configuration resource")
 
-	// Get current state
-	var state ConfigModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Use the base resource abstraction for Read
+	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state ConfigModel) (*keboola.ConfigWithRows, error) {
+		// Create key from model
+		key := keboola.ConfigKey{
+			ID:          keboola.ConfigID(state.ConfigID.ValueString()),
+			BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+			ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
+		}
 
-	// Create key from model
-	key := keboola.ConfigKey{
-		ID:          keboola.ConfigID(state.ConfigID.ValueString()),
-		BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
-		ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
-	}
+		// Get configuration
+		config, err := r.client.GetConfigRequest(key).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("could not read Configuration %s: %w", GetConfigModelId(&state), err)
+		}
 
-	// Get configuration
-	config, err := r.client.GetConfigRequest(key).Send(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Reading Configuration",
-			fmt.Sprintf("Could not read Configuration %s: %s", GetConfigModelId(&state), err.Error()),
-		)
-		return
-	}
+		// Get rows separately
+		rowKey := keboola.ConfigRowKey{
+			ConfigID:    key.ID,
+			BranchID:    key.BranchID,
+			ComponentID: key.ComponentID,
+		}
 
-	// Get rows separately
-	rowKey := keboola.ConfigRowKey{
-		ConfigID:    key.ID,
-		BranchID:    key.BranchID,
-		ComponentID: key.ComponentID,
-	}
+		// Fetch rows from API
+		rows, err := r.client.ListConfigRowRequest(rowKey).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("could not read configuration rows: %w", err)
+		}
 
-	// Fetch rows from API
-	rows, err := r.client.ListConfigRowRequest(rowKey).Send(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error reading configuration rows",
-			fmt.Sprintf("Could not read configuration rows: %s", err.Error()),
-		)
-		return
-	}
+		// Prepare configuration with rows for mapping
+		configWithRows := &keboola.ConfigWithRows{
+			Config: config,
+			Rows:   *rows,
+		}
 
-	// Prepare configuration with rows for mapping
-	configWithRows := &keboola.ConfigWithRows{
-		Config: config,
-		Rows:   *rows,
-	}
-
-	// Map API model to Terraform model including rows
-	diags = r.base.mapper.MapAPIToTerraform(ctx, configWithRows, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Set refreshed state
-	diags = resp.State.Set(ctx, state)
-	resp.Diagnostics.Append(diags...)
+		return configWithRows, nil
+	})
 }
 
 // Update updates the resource
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	tflog.Info(ctx, "Updating configuration resource")
 
-	// Get plan and state
-	var plan, state ConfigModel
-	diags := req.Plan.Get(ctx, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Use the base resource abstraction for Update
+	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state ConfigModel, plan ConfigModel) (*keboola.ConfigWithRows, error) {
+		// Preserve branch, component, and config IDs
+		plan.BranchID = state.BranchID
+		plan.ComponentID = state.ComponentID
+		plan.ConfigID = state.ConfigID
 
-	diags = req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+		// Convert plan to API model
+		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
+		}
 
-	// Validate the plan
-	diags = r.base.mapper.ValidateTerraformModel(ctx, &state, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+		// Update configuration
+		resConfig, err := r.client.UpdateConfigRequest(apiModel, nil).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("could not update configuration: %w", err)
+		}
 
-	plan.BranchID = state.BranchID
-	plan.ComponentID = state.ComponentID
-	plan.ConfigID = state.ConfigID
-
-	// Convert plan to API model
-	apiModel, err := r.base.mapper.MapTerraformToAPI(ctx, state, plan)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating configuration",
-			fmt.Sprintf("Failed to map Terraform model to API: %s", err.Error()),
-		)
-		return
-	}
-
-	// Update configuration
-	resConfig, err := r.client.UpdateConfigRequest(apiModel, nil).Send(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error updating configuration",
-			fmt.Sprintf("Could not update configuration: %s", err.Error()),
-		)
-		return
-	}
-
-	// Map API model back to Terraform model
-	diags = r.base.mapper.MapAPIToTerraform(ctx, resConfig, &plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	// Set state
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
+		return resConfig, nil
+	})
 }
 
 // Delete deletes the resource
 func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Info(ctx, "Deleting configuration resource")
 
-	// Get current state
-	var state ConfigModel
-	diags := req.State.Get(ctx, &state)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	// Use the base resource abstraction for Delete
+	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state ConfigModel) error {
+		// Create key from model
+		key := keboola.ConfigKey{
+			ID:          keboola.ConfigID(state.ConfigID.ValueString()),
+			BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+			ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
+		}
 
-	// Create key from model
-	key := keboola.ConfigKey{
-		ID:          keboola.ConfigID(state.ConfigID.ValueString()),
-		BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
-		ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
-	}
+		// Delete the configuration
+		err := r.client.DeleteConfigRequest(key).SendOrErr(ctx)
+		if err != nil {
+			return fmt.Errorf("could not delete configuration: %w", err)
+		}
 
-	// Delete the configuration
-	err := r.client.DeleteConfigRequest(key).SendOrErr(ctx)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Deleting Configuration",
-			fmt.Sprintf("Could not delete configuration: %s", err.Error()),
-		)
-		return
-	}
+		return nil
+	})
 }

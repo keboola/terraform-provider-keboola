@@ -100,7 +100,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	// Use the base resource abstraction for Create
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*EncryptResponse, error) {
 		// Handle API call from the mapper
-		return r.base.Mapper.MapTerraformToAPI(ctx, model)
+		return r.base.Mapper.MapTerraformToAPI(ctx, Model{}, model)
 	})
 }
 
@@ -151,7 +151,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	// Use the base resource abstraction for Update
 	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state Model, plan Model) (*EncryptResponse, error) {
 		// Handle API call from the mapper
-		return r.base.Mapper.MapTerraformToAPI(ctx, plan)
+		return r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
 	})
 }
 
