@@ -12,34 +12,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
-)
 
-// Ensure the implementation satisfies the expected interfaces
-var _ provider.Provider = (*keboolaProvider)(nil)
+	cResource "terraform-provider-keboola/internal/provider/resources/configuration"
+	"terraform-provider-keboola/internal/provider/resources/encryption"
+	"terraform-provider-keboola/internal/providermodels"
+)
 
 const KBC_HOST = "KBC_HOST"
 const KBC_TOKEN = "KBC_TOKEN"
 
-// New is a helper function to simplify provider server and testing implementation.
-func New(version string) func() provider.Provider {
-	return func() provider.Provider {
-		return &keboolaProvider{
-			version: version,
-		}
-	}
-}
+// Ensure the implementation satisfies the expected interfaces
+var (
+	_ provider.Provider = &keboolaProvider{}
+)
 
 // keboolaProvider is the provider implementation.
 type keboolaProvider struct {
-	// version is set to the provider version on release, "dev" when the
-	// provider is built and ran locally, and "test" when running acceptance
-	// testing.
 	version string
-}
-
-type providerData struct {
-	client *keboola.AuthorizedAPI
-	token  *keboola.Token
 }
 
 // keboolaProviderModel maps provider schema data to a Go type.
@@ -48,34 +37,44 @@ type keboolaProviderModel struct {
 	Token types.String `tfsdk:"token"`
 }
 
+// New creates a new provider instance
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &keboolaProvider{
+			version: version,
+		}
+	}
+}
+
 // Metadata returns the provider type name.
-func (p *keboolaProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *keboolaProvider) Metadata(ctx context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "keboola"
 	resp.Version = p.version
 }
 
-// GetSchema defines the provider-level schema for configuration data.
-func (p *keboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
+// Schema defines the provider-level schema for configuration data.
+func (p *keboolaProvider) Schema(ctx context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
-				Description: "URI for Keboola Storage API. May also be provided via " + KBC_HOST + " environment variable.",
 				Optional:    true,
+				Description: "URL of the Keboola Connection API. Can be also provided via " + KBC_HOST + " environment variable.",
 			},
 			"token": schema.StringAttribute{
-				Description: "Storage API Token for the Keboola Storage API. May also be provided via " + KBC_TOKEN + " environment variable.",
-				Sensitive:   true,
 				Optional:    true,
+				Sensitive:   true,
+				Description: "API Token used to authenticate against the API. Can be also provided via " + KBC_TOKEN + " environment variable.",
 			},
 		},
 	}
 }
 
-// Configure prepares a Keboola API client for data sources and resources.
+// Configure configures the provider.
 func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	tflog.Info(ctx, "Configuring Keboola API client")
-	// Retrieve provider data from configuration
+
+	// Get the user-provided configuration
 	var config keboolaProviderModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -85,7 +84,6 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 
 	// If practitioner provided a configuration value for any of the
 	// attributes, it must be a known value.
-
 	if config.Host.IsUnknown() {
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
@@ -151,34 +149,42 @@ func (p *keboolaProvider) Configure(ctx context.Context, req provider.ConfigureR
 	ctx = tflog.SetField(ctx, "keboola_token", token)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "keboola_token")
 
-	// Create a new Keboola Storage api client using the configuration values
+	// Create a new Keboola Storage API client using the configuration values
 	sapiClient, err := keboola.NewAuthorizedAPI(ctx, host, token)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
+		return
 	}
+
 	tokenObject, err := sapiClient.VerifyTokenRequest(token).Send(ctx)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client, given token is invalid:", err.Error())
+		return
 	}
 
 	// Make the Keboola client available during DataSource and Resource
 	// type Configure methods.
-	data := providerData{sapiClient, tokenObject}
-	resp.DataSourceData = &data
-	resp.ResourceData = &data
+	data := &providermodels.ProviderData{
+		Client: sapiClient,
+		Token:  tokenObject,
+	}
 
-	tflog.Info(ctx, "Configured Keboola API client", map[string]any{"success": true})
+	// Set the provider data
+	resp.DataSourceData = data
+	resp.ResourceData = data
+
+	tflog.Info(ctx, "Configured Keboola API client")
 }
 
-// DataSources defines the data sources implemented in the provider.
+// DataSources defines the data sources implemented by the provider.
 func (p *keboolaProvider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{}
 }
 
-// Resources defines the resources implemented in the provider.
+// Resources defines the resources implemented by the provider.
 func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resource {
 	return []func() resource.Resource{
-		NewConfigResource,
-		NewEnryptionResource,
+		encryption.NewResource,
+		cResource.NewResource,
 	}
 }
