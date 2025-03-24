@@ -86,11 +86,11 @@ Optional:
 - `configuration_row` (String) Content of the configuration row specified as JSON string.
 - `description` (String) Description of the configuration row.
 - `is_disabled` (Boolean) Whether configuration row is enabled or disabled.
-- `state` (String) State of the configuration row.
 
 Read-Only:
 
 - `id` (String) ID of the configuration row
+- `state` (String) State of the configuration row.
 - `version` (Number) Version of the configuration row.
 
 

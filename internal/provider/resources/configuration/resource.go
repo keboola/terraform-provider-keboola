@@ -156,7 +156,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 						},
 						"state": schema.StringAttribute{
 							Description: "State of the configuration row.",
-							Optional:    true,
 							Computed:    true,
 						},
 						"configuration_row": schema.StringAttribute{
