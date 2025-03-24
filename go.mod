@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/terraform-plugin-go v0.26.0
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.36.1
-	github.com/keboola/go-client v1.29.1-0.20250319094049-d850c86d3dbc
+	github.com/keboola/go-client v1.29.1-0.20250324082202-76e07013fb18
 	github.com/keboola/go-utils v1.3.0
 	github.com/stretchr/testify v1.10.0
 )
