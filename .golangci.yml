@@ -1,0 +1,98 @@
+run:
+  timeout: 15m
+  concurrency: 8
+  tests: true # check test files
+  modules-download-mode: mod
+
+output:
+  sort-results: true
+
+linters-settings:
+  depguard:
+    rules:
+      main:
+        list-mode: lax
+        allow:
+          - $gostd
+          - github.com/keboola/terraform-provider-keboola
+
+  exhaustive:
+    default-signifies-exhaustive: true
+
+  # Forbidden constructions
+  forbidigo:
+    # Instead of matching the literal source code, use real package name.
+    analyze-types: true
+    forbid:
+      # No debug statements
+      - p: ^(fmt\.Print.*|print|println)$
+        msg: Debug statements are forbidden, use a logger, not debug statements.
+      # Os ENVs singleton is forbidden, use env.Map instead
+      - p: ^os\.(Setenv|Getenv|Unsetenv|Lookupenv|Clearenv|PathSeparator)$
+        msg: Os ENVs singleton is forbidden, use env.Map instead.
+      # Os Stdout and Stderr are forbidden, use dependencies instead
+      - p: ^os\.(Stdout|Stderr)$
+        msg: Use dependencies instead.
+
+  gci:
+    sections:
+      - standard
+      - default
+      - localmodule
+
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 10
+
+  gofumpt:
+    extra-rules: true
+
+  wrapcheck:
+    ignorePackageGlobs:
+      - github.com/keboola/terraform-provider-keboola/* # Errors from the project can be returned without wrapping
+
+# https://golangci-lint.run/usage/linters
+linters:
+  enable-all: true
+  disable:
+    - gocognit # Do not abuse with lines of code for TF provider - TODO: remove
+    - funlen # Do not abuse with lines of code for TF provider - TODO: remove
+    - cyclop # Do not abuse with lines of code for TF provider`
+    - gocyclo # Do not abuse with lines of code for TF provider
+    - exportloopref # replaced by copyloopvar
+    - tenv # replaced by usetesting
+    - gofmt
+    - goimports
+    - gomoddirectives
+    - misspell
+    - varnamelen
+    - wsl
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude:
+    - "variable name 'tc' is too short for the scope of its usage"
+    - "G306: Expect WriteFile permissions to be 0600 or less"
+  exclude-rules:
+    - path: cmd/main.go
+      text: "use of `os.Std(out|err)` forbidden"
+      linters:
+        - forbidigo
+    - path: ".*_test.go"
+      linters:
+        - wrapcheck
+        - exhaustruct
+        - lll
+    - path: "provider.go"
+      linters:
+        - exhaustruct
+    - path: "internal/providermodels/"
+      linters:
+        - exhaustruct
+    - path: "internal/provider/resources/.*/mapper.go"
+      linters:
+        - exhaustruct
+    - path: "internal/provider/resources/.*/resource.go"
+      linters:
+        - exhaustruct

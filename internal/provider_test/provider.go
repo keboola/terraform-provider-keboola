@@ -1,4 +1,5 @@
-package provider
+// Package provider_test provides acceptance testing utilities for the Keboola Terraform provider
+package provider_test
 
 import (
 	"context"
@@ -8,8 +9,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/go-client/pkg/keboola"
 
@@ -25,71 +28,91 @@ const (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ provider.Provider = &keboolaProvider{version: "dev"}
+	_ provider.Provider = &testKeboolaProvider{}
 )
 
-// keboolaProvider is the provider implementation.
-type keboolaProvider struct {
+// testKeboolaProvider is a simplified provider implementation for testing.
+type testKeboolaProvider struct {
 	version string
 }
 
-// keboolaProviderModel maps provider schema data to a Go type.
-type keboolaProviderModel struct {
+// testKeboolaProviderModel maps provider schema data to a Go type.
+type testKeboolaProviderModel struct {
 	Host  types.String `tfsdk:"host"`
 	Token types.String `tfsdk:"token"`
 }
 
-// New creates a new provider instance.
+// ProviderConfig returns a provider configuration for testing.
+func ProviderConfig() string {
+	host := os.Getenv("TEST_KBC_HOST")   //nolint: forbidigo
+	token := os.Getenv("TEST_KBC_TOKEN") //nolint: forbidigo
+
+	return `
+provider "keboola" {
+  host  = "` + host + `"
+  token = "` + token + `"
+}
+`
+}
+
+// TestAccProtoV6ProviderFactories returns a map of provider server factories for testing.
+func TestAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+	return map[string]func() (tfprotov6.ProviderServer, error){
+		"keboola": providerserver.NewProtocol6WithError(New("test")()),
+	}
+}
+
+// New creates a new provider instance for testing.
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &keboolaProvider{
+		return &testKeboolaProvider{
 			version: version,
 		}
 	}
 }
 
+// TestAccPreCheck is a function to run before tests to ensure test environment is properly set up.
+func TestAccPreCheck() {
+	// This can be expanded to check for required environment variables
+	if os.Getenv("TEST_KBC_HOST") == "" || os.Getenv("TEST_KBC_TOKEN") == "" { //nolint: forbidigo
+		panic("TEST_KBC_HOST and TEST_KBC_TOKEN must be set for acceptance tests")
+	}
+}
+
 // Metadata returns the provider type name.
-func (p *keboolaProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
+func (p *testKeboolaProvider) Metadata(_ context.Context, _ provider.MetadataRequest, resp *provider.MetadataResponse) {
 	resp.TypeName = "keboola"
 	resp.Version = p.version
 }
 
 // Schema defines the provider-level schema for configuration data.
-func (p *keboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
-	hostEnvVar := "URL of the Keboola Connection API. Can be also provided via " +
-		KbcHost + " environment variable."
-	tokenEnvVar := "API Token used to authenticate against the API. Can be also provided via " +
-		KbcToken + " environment variable."
-
+func (p *testKeboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description:         "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
-		MarkdownDescription: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
-		Blocks:              map[string]schema.Block{},
-		DeprecationMessage:  "",
+		Description: "Interact with Keboola Storage API (https://keboola.docs.apiary.io/).",
 		Attributes: map[string]schema.Attribute{
 			"host": schema.StringAttribute{
 				Optional:    true,
-				Description: hostEnvVar,
+				Description: "URL of the Keboola Connection API. Can be also provided via " + KbcHost + " environment variable.",
 			},
 			"token": schema.StringAttribute{
 				Optional:    true,
 				Sensitive:   true,
-				Description: tokenEnvVar,
+				Description: "API Token used to authenticate against the API. Can be also provided via " + KbcToken + " environment variable.", //nolint: lll
 			},
 		},
 	}
 }
 
 // Configure configures the provider.
-func (p *keboolaProvider) Configure(
+func (p *testKeboolaProvider) Configure(
 	ctx context.Context,
 	req provider.ConfigureRequest,
 	resp *provider.ConfigureResponse,
 ) {
-	tflog.Info(ctx, "Configuring Keboola API client")
+	tflog.Info(ctx, "Configuring Keboola API client for tests")
 
 	// Get the user-provided configuration
-	var config keboolaProviderModel
+	var config testKeboolaProviderModel
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
@@ -99,28 +122,20 @@ func (p *keboolaProvider) Configure(
 	// If practitioner provided a configuration value for any of the
 	// attributes, it must be a known value.
 	if config.Host.IsUnknown() {
-		hostErrMsg := "The provider cannot create the Keboola API client as there is an unknown " +
-			"configuration value for the Keboola API host. " +
-			"Either target apply the source of the value first, set the value statically in the configuration, " +
-			"or use the " + KbcHost + " environment variable."
-
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
 			"Unknown Keboola API Host",
-			hostErrMsg,
+			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API host. "+ //nolint: lll
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KbcHost+" environment variable.", //nolint: lll
 		)
 	}
 
 	if config.Token.IsUnknown() {
-		tokenErrMsg := "The provider cannot create the Keboola API client as there is an unknown " +
-			"configuration value for the Keboola API token. " +
-			"Either target apply the source of the value first, set the value statically in the configuration, " +
-			"or use the " + KbcToken + " environment variable."
-
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
 			"Unknown Keboola API Token",
-			tokenErrMsg,
+			"The provider cannot create the Keboola API client as there is an unknown configuration value for the Keboola API token. "+ //nolint: lll
+				"Either target apply the source of the value first, set the value statically in the configuration, or use the "+KbcToken+" environment variable.", //nolint: lll
 		)
 	}
 
@@ -144,28 +159,22 @@ func (p *keboolaProvider) Configure(
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
 	if host == "" {
-		missingHostMsg := "The provider cannot create the Keboola API client as there is a missing or empty " +
-			"value for the Keboola API host. " +
-			"Set the host value in the configuration or use the " + KbcHost + " environment variable. " +
-			"If either is already set, ensure the value is not empty."
-
 		resp.Diagnostics.AddAttributeError(
 			path.Root("host"),
 			"Missing Keboola API Host",
-			missingHostMsg,
+			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API host. "+
+				"Set the host value in the configuration or use the "+KbcHost+" environment variable. "+
+				"If either is already set, ensure the value is not empty.",
 		)
 	}
 
 	if token == "" {
-		missingTokenMsg := "The provider cannot create the Keboola API client as there is a missing or empty " +
-			"value for the Keboola API token. " +
-			"Set the token value in the configuration or use the " + KbcToken + " environment variable. " +
-			"If either is already set, ensure the value is not empty."
-
 		resp.Diagnostics.AddAttributeError(
 			path.Root("token"),
 			"Missing Keboola API token",
-			missingTokenMsg,
+			"The provider cannot create the Keboola API client as there is a missing or empty value for the Keboola API token. "+
+				"Set the token value in the configuration or use the "+KbcToken+" environment variable. "+
+				"If either is already set, ensure the value is not empty.",
 		)
 	}
 
@@ -203,16 +212,18 @@ func (p *keboolaProvider) Configure(
 	resp.DataSourceData = data
 	resp.ResourceData = data
 
-	tflog.Info(ctx, "Configured Keboola API client")
+	tflog.Info(ctx, "Configured Keboola API client for tests")
 }
 
 // DataSources defines the data sources implemented by the provider.
-func (p *keboolaProvider) DataSources(_ context.Context) []func() datasource.DataSource {
+// This is intentionally empty for testing purposes.
+func (p *testKeboolaProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{}
 }
 
 // Resources defines the resources implemented by the provider.
-func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resource {
+// This adds resource factories for testing purposes only.
+func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Resource {
 	cResource := func() resource.Resource {
 		return configuration.NewResource()
 	}
