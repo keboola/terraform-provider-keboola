@@ -13,7 +13,6 @@ provider "keboola" {
   # Configuration can be provided via environment variables:
   # KBC_HOST - Keboola Stack API host
   # KBC_TOKEN - Storage API token
-  # TODO: Branch support
 }
 
 resource "random_string" "random" {
@@ -73,6 +72,25 @@ resource "keboola_component_configuration" "telemetry_extractor" {
       })
     },
     {
+      name        = "Metricsa"
+      description = "Collects telemetrya"
+      # Row-specific configuration
+      configuration_row = jsonencode({
+        parameters = {
+          api = {
+            query = {
+              format = "json"
+            }
+          }
+          processor = {
+            after = {
+              filter_empty = true
+            }
+          }
+        }
+      })
+    },
+    {
       name        = "Test"
       description = "Test"
       configuration_row = jsonencode({
@@ -107,54 +125,23 @@ resource "keboola_component_configuration" "telemetryScheduler" {
 })
 }
 
-resource "keboola_scheduler" "telemetry_schedule_activate" {
-  config_id = keboola_component_configuration.telemetry_scheduler.configuration_id
-}
 
-resource "keboola_component_configuration" "orchestration1" {
-  name        = "Orchestration12"
-  description = ""
-  component_id = "keboola.orchestrator"
-  configuration = jsonencode({
-    phases = [
-      {
-        id   = random_string.random.result
-        name = "Step 1"
-        dependsOn = []
-      }
-    ],
-    tasks = [
-      {
-        id = random_string.random.result
-        name = "keboola.ex-aws-s3-${keboola_component_configuration.telemetry_extractor.configuration_id}"
-        phase = random_string.random.result
-        task = {
-          componentId = "keboola.ex-aws-s3"
-          configId = keboola_component_configuration.telemetry_extractor.configuration_id
-          mode = "run"
-        }
-        continueOnFailure = false
-        enabled = true
-      }
-    ]
-  })
-}
 
-resource "keboola_component_configuration" "telemetry_scheduler" {
-  name        = "Telemetry Scheduler"
-  description = ""
-  component_id = "keboola.scheduler"
-  configuration = jsonencode({
-    schedule = {
-        cronTab = "*/15 * * * *"
-        timezone = "UTC"
-        state = "enabled"
-    }
-    target = {
-        componentId = "keboola.orchestrator"
-        configurationId = keboola_component_configuration.orchestration1.configuration_id
-        mode = "run"
-    }
-  })
+resource "keboola_component_configuration" "telemetry_extractor2" {
+  name         = "Telemetry Extractor v23"
+  component_id = "keboola.ex-aws-s3"
+  description  = "Example configuration for collecting telemetry data"
+  configuration = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource.com\"},\"config\":{\"outputBucket\":\"outputs\",\"jobs\":[{\"endpoint\":\"users\",\"children\":[{\"endpoint\":\"user/{user-id}\",\"dataField\":\".\",\"placeholders\":{\"user-id\":\"id\"}}]}]}}}"
+  rows = [
+    {
+      name        = "Test"
+      description = "Test"
+      configuration_row = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource.com\"},\"config\":{\"outputBucket\":\"outputs\",\"jobs\":[{\"endpoint\":\"users\",\"children\":[{\"endpoint\":\"user/{user-id}\",\"dataField\":\".\",\"placeholders\":{\"user-id\":\"id\"}}]}]}}}"
+    },
+    {
+      name        = "Test2"
+      description = "Test2"
+      configuration_row = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource2.com\"}}}"
+    },
+  ]
 }
-
