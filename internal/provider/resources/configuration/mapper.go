@@ -44,7 +44,6 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	tfModel.Description = types.StringValue(apiModel.Config.Description)
 	tfModel.ChangeDescription = types.StringValue(apiModel.Config.ChangeDescription)
 	tfModel.IsDeleted = types.BoolValue(apiModel.Config.IsDeleted)
-	tfModel.Version = types.Int64Value(int64(apiModel.Config.Version))
 	tfModel.IsDisabled = types.BoolValue(apiModel.Config.IsDisabled)
 	tfModel.Created = types.StringValue(apiModel.Config.Created.UTC().String())
 

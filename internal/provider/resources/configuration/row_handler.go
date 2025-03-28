@@ -163,7 +163,6 @@ func createRowModelFromAPI(apiRow *keboola.ConfigRow, isTest bool) RowModel {
 		IsDisabled:        types.BoolValue(apiRow.IsDisabled),
 		Description:       types.StringValue(apiRow.Description),
 		ChangeDescription: types.StringValue(apiRow.ChangeDescription),
-		Version:           types.Int64Value(int64(apiRow.Version)),
 	}
 
 	// Handle row state and content
