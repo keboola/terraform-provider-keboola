@@ -3,6 +3,9 @@ terraform {
     keboola = {
       source = "keboola/keboola"
     }
+    random = {
+      source = "hashicorp/random"
+    }
   }
 }
 
@@ -11,6 +14,13 @@ provider "keboola" {
   # KBC_HOST - Keboola Stack API host
   # KBC_TOKEN - Storage API token
 }
+
+resource "random_string" "random" {
+  length           = 16
+  special          = true
+  override_special = "/@£$\\"
+}
+
 
 # Create a generic extractor configuration
 resource "keboola_component_configuration" "telemetry_extractor" {
@@ -62,19 +72,6 @@ resource "keboola_component_configuration" "telemetry_extractor" {
       })
     },
     {
-      name        = "Test"
-      description = "Test"
-      configuration_row = jsonencode({
-        parameters = {
-          api = {
-            query = {
-              format = "json"
-            }
-          }
-        }
-      })
-    },
-    {
       name        = "Metricsa"
       description = "Collects telemetrya"
       # Row-specific configuration
@@ -93,6 +90,58 @@ resource "keboola_component_configuration" "telemetry_extractor" {
         }
       })
     },
+    {
+      name        = "Test"
+      description = "Test"
+      configuration_row = jsonencode({
+        parameters = {
+          api = {
+            query = {
+              format = "json"
+            }
+          }
+        }
+      })
+    },
+
   ]
 }
 
+resource "keboola_component_configuration" "telemetryScheduler" {
+  name = "Telemetry Scheduler"
+  component_id = "keboola.scheduler"
+  description = "Example configuration for telemetry data collection"
+  configuration = jsonencode({
+    "schedule": {
+        "cronTab": "*/15 * * * *",
+        "timezone": "UTC",
+        "state": "enabled"
+    },
+    "target": {
+        "componentId": "keboola.orchestrator",
+        "configurationId": "11183691",
+        "mode": "run"
+    }
+})
+}
+
+
+
+resource "keboola_component_configuration" "telemetry_extractor2" {
+  name         = "Telemetry Extractor v23"
+  component_id = "keboola.ex-aws-s3"
+  description  = "Example configuration for collecting telemetry data"
+  configuration = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource.com\"},\"config\":{\"outputBucket\":\"outputs\",\"jobs\":[{\"endpoint\":\"users\",\"children\":[{\"endpoint\":\"user/{user-id}\",\"dataField\":\".\",\"placeholders\":{\"user-id\":\"id\"}}]}]}}}"
+  rows = [
+    {
+      name        = "Test"
+      description = "Test"
+      configuration_row = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource.com\"},\"config\":{\"outputBucket\":\"outputs\",\"jobs\":[{\"endpoint\":\"users\",\"children\":[{\"endpoint\":\"user/{user-id}\",\"dataField\":\".\",\"placeholders\":{\"user-id\":\"id\"}}]}]}}}"
+    },
+    {
+      name        = "Test2"
+      description = "Test2"
+      configuration_row = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource2.com\"}}}"
+    },
+  ]
+}

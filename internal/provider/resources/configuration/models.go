@@ -17,7 +17,6 @@ type ConfigModel struct {
 	ChangeDescription types.String `tfsdk:"change_description"`
 	IsDeleted         types.Bool   `tfsdk:"is_deleted"`
 	Created           types.String `tfsdk:"created"`
-	Version           types.Int64  `tfsdk:"version"`
 	IsDisabled        types.Bool   `tfsdk:"is_disabled"`
 	Content           types.String `tfsdk:"configuration"`
 	Rows              types.List   `tfsdk:"rows"`
@@ -30,7 +29,6 @@ type RowModel struct {
 	Description       types.String `tfsdk:"description"`
 	ChangeDescription types.String `tfsdk:"change_description"`
 	IsDisabled        types.Bool   `tfsdk:"is_disabled"`
-	Version           types.Int64  `tfsdk:"version"`
 	State             types.String `tfsdk:"state"`
 	Content           types.String `tfsdk:"configuration_row"`
 }
