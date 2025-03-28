@@ -27,9 +27,13 @@ func (m *SchedulerMapper) MapAPIToTerraform(
 
 	// Map fields from API to Terraform model
 	tfModel.ID = types.StringValue(string(apiModel.ID))
-	tfModel.ScheduleID = types.StringValue(string(apiModel.ID))
 	tfModel.ConfigID = types.StringValue(string(apiModel.ConfigID))
+<<<<<<< Updated upstream
+	tfModel.ConfigurationVersion = types.StringValue(string(apiModel.ScheduleCron.CronTab))
+=======
+	tfModel.ConfigurationVersion = types.StringValue(apiModel.ConfigurationVersionID)
 
+>>>>>>> Stashed changes
 	return diags
 }
 
@@ -42,8 +46,8 @@ func (m *SchedulerMapper) MapTerraformToAPI(
 	schedule := &keboola.Schedule{}
 
 	// Map ID if it exists in the state
-	if !stateModel.ScheduleID.IsNull() && stateModel.ScheduleID.ValueString() != "" {
-		schedule.ID = keboola.ScheduleID(stateModel.ScheduleID.ValueString())
+	if !stateModel.ID.IsNull() && stateModel.ID.ValueString() != "" {
+		schedule.ID = keboola.ScheduleID(stateModel.ID.ValueString())
 	}
 
 	// Map config ID
@@ -71,13 +75,6 @@ func (m *SchedulerMapper) ValidateTerraformModel(
 		diags.AddError(
 			"Invalid Configuration",
 			"ConfigID is required for scheduler",
-		)
-	}
-
-	if newModel.CronExpr.IsNull() || newModel.CronExpr.ValueString() == "" {
-		diags.AddError(
-			"Invalid Configuration",
-			"CronExpr is required for scheduler",
 		)
 	}
 

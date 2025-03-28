@@ -58,24 +58,51 @@ func TestAccSchedulerResource(t *testing.T) {
 			// Create a configuration and a scheduler for it
 			{
 				// First create a configuration to use with the scheduler
-				Config: provider_test.ProviderConfig() + testConfigurationResource("test_config", map[string]any{
+				Config: provider_test.ProviderConfig() + testConfigurationResource("telemetry_extractor", map[string]any{
+					"name": "Telemetry Extractor",
+				}) + testConfigurationResource("test_config_orchestrator", map[string]any{
+					"name": "Test Configuration for Orchestrator",
+					"configuration": `{
+						"phases": [
+							{
+								"id": "123141",
+								"name": "Step 1",
+								"dependsOn": []
+							}
+						],
+						"tasks": [
+							{
+								"id": "141241",
+								"name": "ex-generic-v2-${keboola_component_configuration.telemetry_extractor.configuration_id}",
+								"phase": "123141",
+								"task": {
+									"componentId": "ex-generic-v2",
+									"configId": "${keboola_component_configuration.telemetry_extractor.configuration_id}",
+									"mode": "run"
+								},
+								"continueOnFailure": false,
+								"enabled": true
+							}
+						]
+					}`,
+					// Then create a scheduler using the configuration
+				}) + testConfigurationResource("test_config_scheduler", map[string]any{
 					"name": "Test Configuration for Scheduler",
 					"configuration": `{
-						"parameters": {
-							"api": {
-								"baseUrl": "https://example.com"
-							}
+						"schedule": {
+							"cronTab": "*/15 * * * *",
+							"timezone": "UTC",
+							"state": "enabled"
+						},
+						"target": {
+							"componentId": "keboola.orchestrator",
+							"configurationId": "${keboola_component_configuration.test_config_orchestrator.configuration_id}",
+							"mode": "run"
 						}
 					}`,
 					// Then create a scheduler using the configuration
 				}) + testSchedulerResource("test", map[string]any{
-					"config_id":         "${keboola_component_configuration.test_config.id}",
-					"name":              "Test Scheduler",
-					"cron_expression":   "0 0 * * *", // Run daily at midnight
-					"timezone_id":       "Europe/Prague",
-					"description":       "Test scheduler created by Terraform",
-					"active":            true,
-					"version_dependent": false,
+					"config_id": "${keboola_component_configuration.test_config_scheduler.configuration_id}",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "id"),
@@ -88,30 +115,13 @@ func TestAccSchedulerResource(t *testing.T) {
 			// Update the scheduler
 			{
 				Config: provider_test.ProviderConfig() +
-					// Keep the same configuration
-					testConfigurationResource("test_config", map[string]any{
-						"name": "Test Configuration for Scheduler",
-						"configuration": `{
-							"parameters": {
-								"api": {
-									"baseUrl": "https://example.com"
-								}
-							}
-						}`,
-					}) +
 					// Update the scheduler
 					testSchedulerResource("test", map[string]any{
-						"config_id":         "${keboola_component_configuration.test_config.id}",
-						"name":              "Updated Test Scheduler",
-						"cron_expression":   "0 12 * * *", // Run daily at noon
-						"timezone_id":       "America/New_York",
-						"description":       "Updated test scheduler",
-						"active":            true,
-						"version_dependent": true,
+						"config_id": "${keboola_component_configuration.test_config_scheduler.configuration_id}",
 					}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "id"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "name", "Updated Test Scheduler"),
+					resource.TestCheckResourceAttr("keboola_scheduler.test", "active", "false"),
 					resource.TestCheckResourceAttr("keboola_scheduler.test", "cron_expression", "0 12 * * *"),
 					resource.TestCheckResourceAttr("keboola_scheduler.test", "timezone_id", "America/New_York"),
 					resource.TestCheckResourceAttr("keboola_scheduler.test", "version_dependent", "true"),
