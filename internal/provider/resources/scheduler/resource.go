@@ -71,70 +71,10 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"schedule_id": schema.StringAttribute{
-				Description:         "ID of the schedule.",
-				MarkdownDescription: "ID of the schedule.",
-				Computed:            true,
-			},
 			"config_id": schema.StringAttribute{
 				Description:         "ID of the configuration that is scheduled to run.",
 				MarkdownDescription: "ID of the configuration that is scheduled to run.",
 				Required:            true,
-			},
-			"cron_expression": schema.StringAttribute{
-				Description:         "Cron expression for the schedule.",
-				MarkdownDescription: "Cron expression for the schedule.",
-				Computed:            true,
-			},
-			"name": schema.StringAttribute{
-				Description:         "Name of the schedule.",
-				MarkdownDescription: "Name of the schedule.",
-				Computed:            true,
-			},
-			"description": schema.StringAttribute{
-				Description:         "Description of the schedule.",
-				MarkdownDescription: "Description of the schedule.",
-				Optional:            true,
-				Computed:            true,
-			},
-			"timezone_id": schema.StringAttribute{
-				Description:         "Timezone ID for the schedule.",
-				MarkdownDescription: "Timezone ID for the schedule.",
-				Optional:            true,
-				Computed:            true,
-			},
-			"state": schema.StringAttribute{
-				Description:         "State of the schedule.",
-				MarkdownDescription: "State of the schedule.",
-				Computed:            true,
-			},
-			"last_executed_at": schema.StringAttribute{
-				Description:         "Timestamp of the last execution.",
-				MarkdownDescription: "Timestamp of the last execution.",
-				Computed:            true,
-			},
-			"next_execution_at": schema.StringAttribute{
-				Description:         "Timestamp of the next scheduled execution.",
-				MarkdownDescription: "Timestamp of the next scheduled execution.",
-				Computed:            true,
-			},
-			"active": schema.BoolAttribute{
-				Description:         "Whether the schedule is active.",
-				MarkdownDescription: "Whether the schedule is active.",
-				Optional:            true,
-				Computed:            true,
-			},
-			"run_with_token_id": schema.StringAttribute{
-				Description:         "Token ID to run the schedule with.",
-				MarkdownDescription: "Token ID to run the schedule with.",
-				Optional:            true,
-				Computed:            true,
-			},
-			"version_dependent": schema.BoolAttribute{
-				Description:         "Whether the schedule is version dependent.",
-				MarkdownDescription: "Whether the schedule is version dependent.",
-				Optional:            true,
-				Computed:            true,
 			},
 			"configuration_version": schema.StringAttribute{
 				Description:         "Version of the configuration to run.",
@@ -196,6 +136,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		tflog.Info(ctx, "Created schedule using ActivateScheduleRequest", map[string]interface{}{
 			"schedule_id": schedule.ID,
 			"config_id":   schedule.ConfigID,
+			"schedule":    schedule,
 		})
 
 		return schedule, nil
@@ -209,7 +150,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	// Use the base resource abstraction for Read
 	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state SchedulerModel) (*keboola.Schedule, error) {
 		// Get all schedules and find the one with matching ID
-		schedule, err := r.client.GetScheduleRequest(keboola.ScheduleKey{ID: keboola.ScheduleID(state.ScheduleID.ValueString())}).Send(ctx)
+		schedule, err := r.client.GetScheduleRequest(keboola.ScheduleKey{ID: keboola.ScheduleID(state.ID.ValueString())}).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("could not get schedule: %w", err)
 		}
@@ -236,7 +177,7 @@ func (r *Resource) Update(
 			error,
 		) {
 			// Preserve scheduler ID from state
-			plan.ScheduleID = state.ScheduleID
+			plan.ID = state.ID
 
 			// Execute the update operation using the mapper
 			apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
@@ -246,31 +187,20 @@ func (r *Resource) Update(
 
 			// Note: The Keboola API doesn't have a direct UpdateScheduleRequest.
 			// For now, we'll handle the active state if it changed
-			if state.Active.ValueBool() != plan.Active.ValueBool() {
-				if plan.Active.ValueBool() {
-					// If plan is active but state wasn't, activate the schedule
-					configVersionID := ""
-					if !plan.ConfigurationVersion.IsNull() {
-						configVersionID = plan.ConfigurationVersion.ValueString()
-					}
-
-					resSchedule, err := r.client.ActivateScheduleRequest(
-						apiModel.ConfigID,
-						configVersionID,
-					).Send(ctx)
-					if err != nil {
-						return nil, fmt.Errorf("could not activate scheduler: %w", err)
-					}
-					return resSchedule, nil
-				} else {
-					// If plan is not active but state was, there's no direct deactivate method
-					// For now, returning an error
-					return nil, fmt.Errorf("scheduler deactivation is not supported by the Keboola API directly")
-				}
+			// If plan is active but state wasn't, activate the schedule
+			configVersionID := ""
+			if !plan.ConfigurationVersion.IsNull() {
+				configVersionID = plan.ConfigurationVersion.ValueString()
 			}
 
-			// If we get here, we're trying to update fields that can't be updated
-			return nil, fmt.Errorf("scheduler update is limited - only activation is supported")
+			resSchedule, err := r.client.ActivateScheduleRequest(
+				apiModel.ConfigID,
+				configVersionID,
+			).Send(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("could not activate scheduler: %w", err)
+			}
+			return resSchedule, nil
 		})
 }
 
@@ -282,7 +212,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state SchedulerModel) error {
 		// Create key from model
 		key := keboola.ScheduleKey{
-			ID: keboola.ScheduleID(state.ScheduleID.ValueString()),
+			ID: keboola.ScheduleID(state.ID.ValueString()),
 		}
 
 		// Delete the scheduler

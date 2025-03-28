@@ -313,6 +313,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/keboola/go-client v1.29.3-0.20250328074824-16446a03f33d h1:LcGZsby3H8WTFyq2G20rspgFDoM6mlEO6lSpdh/Vr50=
 github.com/keboola/go-client v1.29.3-0.20250328074824-16446a03f33d/go.mod h1:VnKCusaksvRiuAYZcYgzdhlKuWuyIuXE5kaEuAiVc9c=
+github.com/keboola/go-client v1.29.3-0.20250328112128-e7ff69b52133 h1:ISykVbnCpulKtYQR6xAZGADZFGFFA7Cl/MbRl4g6h0Y=
+github.com/keboola/go-client v1.29.3-0.20250328112128-e7ff69b52133/go.mod h1:VnKCusaksvRiuAYZcYgzdhlKuWuyIuXE5kaEuAiVc9c=
 github.com/keboola/go-utils v1.3.0 h1:oiNRfUlLFTWjATty4oQlCBWmiMZN80QCCnRHP61Md5Q=
 github.com/keboola/go-utils v1.3.0/go.mod h1:4YVC2/V0QwgHqxtch8JAVDNVI1aINF2arJ7sh6TO1GY=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
