@@ -12,6 +12,7 @@ provider "keboola" {
   # KBC_TOKEN - Storage API token
 }
 
+
 # Create a generic extractor configuration
 resource "keboola_component_configuration" "telemetry_extractor" {
   name         = "Telemetry Extractor v2"
@@ -96,3 +97,24 @@ resource "keboola_component_configuration" "telemetry_extractor" {
   ]
 }
 
+resource "keboola_component_configuration" "telemetryScheduler" {
+  name = "Telemetry Scheduler"
+  component_id = "keboola.scheduler"
+  description = "Example configuration for telemetry data collection"
+  configuration = jsonencode({
+    "schedule": {
+        "cronTab": "*/15 * * * *",
+        "timezone": "UTC",
+        "state": "enabled"
+    },
+    "target": {
+        "componentId": "keboola.orchestrator",
+        "configurationId": "11183691",
+        "mode": "run"
+    }
+})
+}
+
+resource "keboola_scheduler" "telemetry_schedule_activate" {
+  config_id = keboola_component_configuration.telemetry_extractor.id
+}
