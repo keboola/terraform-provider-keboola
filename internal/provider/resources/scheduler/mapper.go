@@ -8,16 +8,16 @@ import (
 	"github.com/keboola/go-client/pkg/keboola"
 )
 
-// SchedulerMapper implements ResourceMapper for scheduler resources.
-type SchedulerMapper struct {
+// Mapper implements ResourceMapper for scheduler resources.
+type Mapper struct {
 	isTest bool
 }
 
 // MapAPIToTerraform converts an API model to a Terraform model.
-func (m *SchedulerMapper) MapAPIToTerraform(
-	ctx context.Context,
+func (m *Mapper) MapAPIToTerraform(
+	_ context.Context,
 	apiModel *keboola.Schedule,
-	tfModel *SchedulerModel,
+	tfModel *Model,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -28,19 +28,15 @@ func (m *SchedulerMapper) MapAPIToTerraform(
 	// Map fields from API to Terraform model
 	tfModel.ID = types.StringValue(string(apiModel.ID))
 	tfModel.ConfigID = types.StringValue(string(apiModel.ConfigID))
-<<<<<<< Updated upstream
-	tfModel.ConfigurationVersion = types.StringValue(string(apiModel.ScheduleCron.CronTab))
-=======
 	tfModel.ConfigurationVersion = types.StringValue(apiModel.ConfigurationVersionID)
 
->>>>>>> Stashed changes
 	return diags
 }
 
 // MapTerraformToAPI converts a Terraform model to an API model.
-func (m *SchedulerMapper) MapTerraformToAPI(
-	ctx context.Context,
-	stateModel, tfModel SchedulerModel,
+func (m *Mapper) MapTerraformToAPI(
+	_ context.Context,
+	stateModel, tfModel Model,
 ) (*keboola.Schedule, error) {
 	// Create a new Schedule instance
 	schedule := &keboola.Schedule{}
@@ -59,9 +55,9 @@ func (m *SchedulerMapper) MapTerraformToAPI(
 }
 
 // ValidateTerraformModel validates a Terraform model against constraints.
-func (m *SchedulerMapper) ValidateTerraformModel(
-	ctx context.Context,
-	oldModel, newModel *SchedulerModel,
+func (m *Mapper) ValidateTerraformModel(
+	_ context.Context,
+	_, newModel *Model,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 

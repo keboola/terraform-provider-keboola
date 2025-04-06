@@ -28,7 +28,7 @@ func testSchedulerResource(resourceID string, resourceDefinition map[string]any)
 	return result
 }
 
-// testConfigurationResource creates a generic component configuration for testing
+// testConfigurationResource creates a generic component configuration for testing.
 func testConfigurationResource(resourceID string, resourceDefinition map[string]any) string {
 	result := `resource "keboola_component_configuration" "` + resourceID + `" {
 	component_id = "ex-generic-v2"`

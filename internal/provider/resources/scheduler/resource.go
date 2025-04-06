@@ -2,6 +2,7 @@ package scheduler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -16,15 +17,18 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
+// ErrConfigIDRequired is returned when the config_id is missing during scheduler creation.
+var ErrConfigIDRequired = errors.New("config_id is required for scheduler creation")
+
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource = &Resource{
-		base:   abstraction.BaseResource[SchedulerModel, *keboola.Schedule]{},
+		base:   abstraction.BaseResource[Model, *keboola.Schedule]{},
 		client: nil,
 		isTest: false,
 	}
 	_ resource.ResourceWithConfigure = &Resource{
-		base:   abstraction.BaseResource[SchedulerModel, *keboola.Schedule]{},
+		base:   abstraction.BaseResource[Model, *keboola.Schedule]{},
 		client: nil,
 		isTest: false,
 	}
@@ -33,7 +37,7 @@ var (
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() *Resource {
 	return &Resource{
-		base:   abstraction.BaseResource[SchedulerModel, *keboola.Schedule]{},
+		base:   abstraction.BaseResource[Model, *keboola.Schedule]{},
 		client: nil,
 		isTest: false,
 	}
@@ -42,7 +46,7 @@ func NewResource() *Resource {
 // Resource is the scheduler resource implementation.
 type Resource struct {
 	// Base functionality with scheduler model specifics
-	base abstraction.BaseResource[SchedulerModel, *keboola.Schedule]
+	base abstraction.BaseResource[Model, *keboola.Schedule]
 
 	// Direct access to the API client for specific operations
 	client *keboola.AuthorizedAPI
@@ -103,7 +107,7 @@ func (r *Resource) Configure(
 	r.isTest = os.Getenv("TF_ACC") != "" //nolint: forbidigo
 
 	// Set up the mapper
-	r.base.Mapper = &SchedulerMapper{
+	r.base.Mapper = &Mapper{
 		isTest: r.isTest,
 	}
 }
@@ -113,11 +117,11 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	tflog.Info(ctx, "Creating scheduler resource")
 
 	// Use the base resource abstraction for Create
-	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, plan SchedulerModel) (*keboola.Schedule, error) {
+	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, plan Model) (*keboola.Schedule, error) {
 		// Note: The Keboola API doesn't have a direct CreateScheduleRequest method.
 		// Validate required fields
 		if plan.ConfigID.IsNull() || plan.ConfigID.ValueString() == "" {
-			return nil, fmt.Errorf("config_id is required for scheduler creation")
+			return nil, ErrConfigIDRequired
 		}
 
 		// Get configuration version if specified
@@ -148,9 +152,13 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	tflog.Info(ctx, "Reading scheduler resource")
 
 	// Use the base resource abstraction for Read
-	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state SchedulerModel) (*keboola.Schedule, error) {
+	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state Model) (*keboola.Schedule, error) {
 		// Get all schedules and find the one with matching ID
-		schedule, err := r.client.GetScheduleRequest(keboola.ScheduleKey{ID: keboola.ScheduleID(state.ID.ValueString())}).Send(ctx)
+		schedule, err := r.client.GetScheduleRequest(
+			keboola.ScheduleKey{
+				ID: keboola.ScheduleID(state.ID.ValueString()),
+			},
+		).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("could not get schedule: %w", err)
 		}
@@ -172,7 +180,7 @@ func (r *Resource) Update(
 		ctx,
 		req,
 		resp,
-		func(ctx context.Context, state, plan SchedulerModel) (
+		func(ctx context.Context, state, plan Model) (
 			*keboola.Schedule,
 			error,
 		) {
@@ -200,6 +208,7 @@ func (r *Resource) Update(
 			if err != nil {
 				return nil, fmt.Errorf("could not activate scheduler: %w", err)
 			}
+
 			return resSchedule, nil
 		})
 }
@@ -209,7 +218,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	tflog.Info(ctx, "Deleting scheduler resource")
 
 	// Use the base resource abstraction for Delete
-	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state SchedulerModel) error {
+	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state Model) error {
 		// Create key from model
 		key := keboola.ScheduleKey{
 			ID: keboola.ScheduleID(state.ID.ValueString()),

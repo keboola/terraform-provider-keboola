@@ -365,7 +365,7 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 		// State upgrade implementation from 0 (prior state version) to 2 (Schema.Version)
 		0: {
 			// Optionally, the PriorSchema field can be defined.
-			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) { /* ... */
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, resp *resource.UpgradeStateResponse) {
 				diags := resp.State.Set(ctx, req.State)
 				resp.Diagnostics.Append(diags...)
 			},
