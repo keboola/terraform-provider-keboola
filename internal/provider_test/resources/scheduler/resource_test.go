@@ -151,9 +151,7 @@ func TestSchedulerCreateWithInvalidConfigID(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				Config: provider_test.ProviderConfig() + testSchedulerResource("invalid", map[string]any{
-					"config_id":       "invalid-config-id", // Invalid config ID
-					"name":            "Invalid Config Test",
-					"cron_expression": "0 0 * * *",
+					"configuration_id": "invalid-config-id", // Invalid config ID
 				}),
 				ExpectError: regexp.MustCompile("could not create scheduler"),
 			},
