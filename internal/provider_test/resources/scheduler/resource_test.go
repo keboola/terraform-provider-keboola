@@ -75,7 +75,7 @@ func TestAccSchedulerResource(t *testing.T) {
 				}) + testConfigurationResource("test_config_orchestrator", map[string]any{
 					"name":         "Test Configuration for Orchestrator",
 					"component_id": "keboola.orchestrator",
-					"configuration": fmt.Sprintf(`{
+					"configuration": `{
 						"phases": [
 							{
 								"id": "${random_string.test.result}-phase",
@@ -97,7 +97,7 @@ func TestAccSchedulerResource(t *testing.T) {
 								"enabled": true
 							}
 						]
-					}`),
+					}`,
 					// Then create a scheduler configuration using the orchestrator config
 				}) + testConfigurationResource("test_config_scheduler", map[string]any{
 					"name":         "Test Configuration for Scheduler",
