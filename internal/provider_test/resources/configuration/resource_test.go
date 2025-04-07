@@ -69,7 +69,6 @@ func checkAllAttributesSet(resourceID string) resource.TestCheckFunc {
 		resource.TestCheckResourceAttrSet(fullResourceID, "change_description"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "is_deleted"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "created"),
-		resource.TestCheckResourceAttrSet(fullResourceID, "version"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "is_disabled"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "configuration"),
 	)

@@ -245,7 +245,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 		}
 
 		// Create configuration via API
-		resConfig, err := r.client.CreateConfigRequest(apiModel).Send(ctx)
+		resConfig, err := r.client.CreateConfigRequest(apiModel, false).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("could not create configuration: %w", err)
 		}
