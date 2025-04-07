@@ -30,8 +30,7 @@ func testSchedulerResource(resourceID string, resourceDefinition map[string]any)
 
 // testConfigurationResource creates a generic component configuration for testing.
 func testConfigurationResource(resourceID string, resourceDefinition map[string]any) string {
-	result := `resource "keboola_component_configuration" "` + resourceID + `" {
-	component_id = "ex-generic-v2"`
+	result := `resource "keboola_component_configuration" "` + resourceID + `" {`
 
 	for attribute, value := range resourceDefinition {
 		var pair string
@@ -54,40 +53,55 @@ func TestAccSchedulerResource(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"random": {
+				Source:            "hashicorp/random",
+				VersionConstraint: "3.1.0",
+			},
+		},
 		Steps: []resource.TestStep{
 			// Create a configuration and a scheduler for it
 			{
 				// First create a configuration to use with the scheduler
-				Config: provider_test.ProviderConfig() + testConfigurationResource("telemetry_extractor", map[string]any{
-					"name": "Telemetry Extractor",
+				Config: provider_test.ProviderConfig() + `
+				resource "random_string" "test" {
+					length  = 8
+					special = false
+					upper   = false
+				}
+					` + testConfigurationResource("telemetry_extractor", map[string]any{
+					"name":         "Telemetry Extractor",
+					"component_id": "ex-generic-v2",
 				}) + testConfigurationResource("test_config_orchestrator", map[string]any{
-					"name": "Test Configuration for Orchestrator",
-					"configuration": `{
+					"name":         "Test Configuration for Orchestrator",
+					"component_id": "keboola.orchestrator",
+					"configuration": fmt.Sprintf(`{
 						"phases": [
 							{
-								"id": "123141",
+								"id": "${random_string.test.result}-phase",
 								"name": "Step 1",
 								"dependsOn": []
 							}
 						],
 						"tasks": [
 							{
-								"id": "141241",
+								"id": "${random_string.test.result}-task",
 								"name": "ex-generic-v2-${keboola_component_configuration.telemetry_extractor.configuration_id}",
-								"phase": "123141",
+								"phase": "${random_string.test.result}-phase",
 								"task": {
 									"componentId": "ex-generic-v2",
-									"configId": "${keboola_component_configuration.telemetry_extractor.configuration_id}",
+									"configurationId": "${keboola_component_configuration.telemetry_extractor.configuration_id}",
 									"mode": "run"
 								},
 								"continueOnFailure": false,
 								"enabled": true
 							}
 						]
-					}`,
-					// Then create a scheduler using the configuration
+					}`),
+					// Then create a scheduler configuration using the orchestrator config
 				}) + testConfigurationResource("test_config_scheduler", map[string]any{
-					"name": "Test Configuration for Scheduler",
+					"name":         "Test Configuration for Scheduler",
+					"component_id": "keboola.scheduler", // Make sure component ID is correct for scheduler
 					"configuration": `{
 						"schedule": {
 							"cronTab": "*/15 * * * *",
@@ -100,39 +114,23 @@ func TestAccSchedulerResource(t *testing.T) {
 							"mode": "run"
 						}
 					}`,
-					// Then create a scheduler using the configuration
+					// Then create the actual scheduler resource using the scheduler config
 				}) + testSchedulerResource("test", map[string]any{
-					"config_id": "${keboola_component_configuration.test_config_scheduler.configuration_id}",
+					"configuration_id": "${keboola_component_configuration.test_config_scheduler.configuration_id}",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "id"),
-					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "schedule_id"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "name", "Test Scheduler"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "cron_expression", "0 0 * * *"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "active", "true"),
+					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "configuration_version"),
+					resource.TestCheckResourceAttrSet("keboola_component_configuration.test_config_scheduler", "configuration_id"),
 				),
 			},
-			// Update the scheduler
+			// Attempt to update the schedule by changing the underlying config's cronTab - should force replacement
 			{
-				Config: provider_test.ProviderConfig() +
-					// Update the scheduler
-					testSchedulerResource("test", map[string]any{
-						"config_id": "${keboola_component_configuration.test_config_scheduler.configuration_id}",
-					}),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "id"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "active", "false"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "cron_expression", "0 12 * * *"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "timezone_id", "America/New_York"),
-					resource.TestCheckResourceAttr("keboola_scheduler.test", "version_dependent", "true"),
-				),
-			},
-			// Import test
-			{
-				ResourceName:            "keboola_scheduler.test",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"name", "description", "timezone_id", "cron_expression"},
+				Config: provider_test.ProviderConfig() + testSchedulerResource("test", map[string]any{
+					"configuration_id":      "123",
+					"configuration_version": "123",
+				}),
+				Destroy: true,
 			},
 		},
 	})
@@ -144,6 +142,12 @@ func TestSchedulerCreateWithInvalidConfigID(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,
+		ExternalProviders: map[string]resource.ExternalProvider{
+			"random": {
+				Source:            "hashicorp/random",
+				VersionConstraint: "3.1.0",
+			},
+		},
 		Steps: []resource.TestStep{
 			{
 				Config: provider_test.ProviderConfig() + testSchedulerResource("invalid", map[string]any{

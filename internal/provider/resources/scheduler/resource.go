@@ -75,7 +75,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"config_id": schema.StringAttribute{
+			"configuration_id": schema.StringAttribute{
 				Description:         "ID of the configuration that is scheduled to run.",
 				MarkdownDescription: "ID of the configuration that is scheduled to run.",
 				Required:            true,

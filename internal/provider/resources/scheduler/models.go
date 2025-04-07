@@ -7,7 +7,7 @@ import (
 // Model represents the Terraform schema for a scheduler.
 type Model struct {
 	ID                   types.String `tfsdk:"id"`
-	ConfigID             types.String `tfsdk:"config_id"`
+	ConfigID             types.String `tfsdk:"configuration_id"`
 	ConfigurationVersion types.String `tfsdk:"configuration_version"`
 }
 

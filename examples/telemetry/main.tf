@@ -107,25 +107,36 @@ resource "keboola_component_configuration" "telemetry_extractor" {
   ]
 }
 
-resource "keboola_component_configuration" "telemetryScheduler" {
-  name = "Telemetry Scheduler"
-  component_id = "keboola.scheduler"
-  description = "Example configuration for telemetry data collection"
+
+resource "keboola_component_configuration" "sleep_60s_hourly" {
+  name        = "sleep-60-s-hourly"
+  component_id = "keboola.orchestrator"
+  description = "Orchestration that runs the sleep-60s application hourly"
+
   configuration = jsonencode({
-    "schedule": {
-        "cronTab": "*/15 * * * *",
-        "timezone": "UTC",
-        "state": "enabled"
-    },
-    "target": {
-        "componentId": "keboola.orchestrator",
-        "configurationId": "11183691",
-        "mode": "run"
-    }
-})
+    phases = [
+      {
+        id = random_string.random.result,
+        name = "Step 1",
+        dependsOn = []
+      }
+    ],
+    tasks = [
+      {
+        id = random_string.random.result,
+        name = "app-command-60s",
+        phase = random_string.random.result,
+        task = {
+          mode = "run",
+          componentId = "${keboola_component_configuration.telemetry_extractor.component_id}",
+          configId = "${keboola_component_configuration.telemetry_extractor.configuration_id}"
+        },
+        continueOnFailure = false,
+        enabled = true
+      }
+    ]
+  })
 }
-
-
 
 resource "keboola_component_configuration" "telemetry_extractor2" {
   name         = "Telemetry Extractor v23"
@@ -144,4 +155,26 @@ resource "keboola_component_configuration" "telemetry_extractor2" {
       configuration_row = "{\"parameters\":{\"api\":{\"baseUrl\":\"http://myexternalresource2.com\"}}}"
     },
   ]
+}
+
+resource "keboola_component_configuration" "telemetryScheduler" {
+  name = "Telemetry Scheduler"
+  component_id = "keboola.scheduler"
+  description = "Example configuration for telemetry data collection"
+  configuration = jsonencode({
+    "schedule": {
+        "cronTab": "*/15 * * * *",
+        "timezone": "UTC",
+        "state": "enabled"
+    },
+    "target": {
+        "componentId": "keboola.orchestrator",
+        "configurationId": "${keboola_component_configuration.sleep_60s_hourly.configuration_id}",
+        "mode": "run"
+    }
+})
+}
+
+resource "keboola_scheduler" "telemetry_scheduler" {
+  configuration_id = "${keboola_component_configuration.telemetryScheduler.configuration_id}"
 }
