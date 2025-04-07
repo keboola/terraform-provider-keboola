@@ -272,7 +272,7 @@ func TestAccConfigResource(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					checkAllAttributesSet("test"),
 					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`\d+/ex-generic-v2/\d+`)),
-					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "false"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "true"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "change_description", "update by Keboola terraform provider"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.test"),
 					testAccCheckExampleConfigurationDataSet("keboola_component_configuration.test", "storage.input.tables[0]", "in.data1"),
