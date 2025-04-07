@@ -110,9 +110,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description: "Change description associated with the configuration change.",
 				Optional:    true,
 				Computed:    true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"is_disabled": schema.BoolAttribute{
 				Description: "Wheter configuration is enabled or disabled.",
@@ -164,9 +161,6 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 							Description: "Change description associated with the configuration row change.",
 							Optional:    true,
 							Computed:    true,
-							PlanModifiers: []planmodifier.String{
-								stringplanmodifier.UseStateForUnknown(),
-							},
 						},
 						"is_disabled": schema.BoolAttribute{
 							Description: "Whether configuration row is enabled or disabled.",
