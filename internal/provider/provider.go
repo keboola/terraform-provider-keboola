@@ -15,6 +15,7 @@ import (
 
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
@@ -221,8 +222,13 @@ func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resourc
 		return encryption.NewResource()
 	}
 
+	sResource := func() resource.Resource {
+		return scheduler.NewResource()
+	}
+
 	return []func() resource.Resource{
 		cResource,
 		eResource,
+		sResource,
 	}
 }

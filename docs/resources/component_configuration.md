@@ -71,7 +71,6 @@ EOT
 - `created` (String) Timestamp of the configuration creation date.
 - `id` (String) Unique string identifier assembled as branchId/componentId/configId.
 - `is_deleted` (Boolean) Wheter configuration has been deleted or not.
-- `version` (Number) Id of the version
 
 <a id="nestedatt--rows"></a>
 ### Nested Schema for `rows`
@@ -91,6 +90,5 @@ Read-Only:
 
 - `id` (String) ID of the configuration row
 - `state` (String) State of the configuration row.
-- `version` (Number) Version of the configuration row.
 
 
