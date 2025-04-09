@@ -112,7 +112,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Computed:    true,
 			},
 			"is_disabled": schema.BoolAttribute{
-				Description: "Wheter configuration is enabled or disabled.",
+				Description: "Whether configuration is enabled or disabled.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.Bool{
@@ -125,7 +125,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Computed:    true,
 			},
 			"is_deleted": schema.BoolAttribute{
-				Description: "Wheter configuration has been deleted or not.",
+				Description: "Whether configuration has been deleted or not.",
 				Computed:    true,
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
