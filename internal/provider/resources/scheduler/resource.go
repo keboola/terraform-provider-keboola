@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/keboola/go-client/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/pkg/keboola"
 
 	"github.com/keboola/terraform-provider-keboola/internal/provider/abstraction"
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
