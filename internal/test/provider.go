@@ -1,5 +1,5 @@
-// Package provider_test provides acceptance testing utilities for the Keboola Terraform provider
-package provider_test
+// Package test provides acceptance testing utilities for the Keboola Terraform provider
+package test
 
 import (
 	"context"
