@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 
-	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
+	"github.com/keboola/terraform-provider-keboola/internal/test"
 )
 
 func testSchedulerResource(resourceID string, resourceDefinition map[string]any) string {
@@ -51,8 +51,8 @@ func TestAccSchedulerResource(t *testing.T) {
 	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 provider_test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.TestAccProtoV6ProviderFactories(),
+		PreCheck:                 test.TestAccPreCheck,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"random": {
 				Source:            "hashicorp/random",
@@ -63,7 +63,7 @@ func TestAccSchedulerResource(t *testing.T) {
 			// Create a configuration and a scheduler for it
 			{
 				// First create a configuration to use with the scheduler
-				Config: provider_test.ProviderConfig() + `
+				Config: test.ProviderConfig() + `
 				resource "random_string" "test" {
 					length  = 8
 					special = false
@@ -126,7 +126,7 @@ func TestAccSchedulerResource(t *testing.T) {
 			},
 			// Attempt to update the schedule by changing the underlying config's cronTab - should force replacement
 			{
-				Config: provider_test.ProviderConfig() + testSchedulerResource("test", map[string]any{
+				Config: test.ProviderConfig() + testSchedulerResource("test", map[string]any{
 					"configuration_id":      "123",
 					"configuration_version": "123",
 				}),
@@ -140,8 +140,8 @@ func TestSchedulerCreateWithInvalidConfigID(t *testing.T) {
 	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 provider_test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.TestAccProtoV6ProviderFactories(),
+		PreCheck:                 test.TestAccPreCheck,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"random": {
 				Source:            "hashicorp/random",
@@ -150,7 +150,7 @@ func TestSchedulerCreateWithInvalidConfigID(t *testing.T) {
 		},
 		Steps: []resource.TestStep{
 			{
-				Config: provider_test.ProviderConfig() + testSchedulerResource("invalid", map[string]any{
+				Config: test.ProviderConfig() + testSchedulerResource("invalid", map[string]any{
 					"configuration_id": "invalid-config-id", // Invalid config ID
 				}),
 				ExpectError: regexp.MustCompile("could not create scheduler"),
