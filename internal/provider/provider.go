@@ -14,6 +14,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch/metadata"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"
@@ -239,6 +240,9 @@ func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resourc
 		},
 		func() resource.Resource {
 			return branch.NewResource()
+		},
+		func() resource.Resource {
+			return metadata.NewResource()
 		},
 	}
 }
