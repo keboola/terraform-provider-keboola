@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/keboola/keboola-sdk-go/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
 // the provider and resources without creating circular dependencies.

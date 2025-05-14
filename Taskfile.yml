@@ -1,0 +1,139 @@
+version: '3'
+
+tasks:
+  default:
+    deps: [install]
+
+  generate-docs:
+    cmds:
+      - go generate ./...
+
+  install:
+    cmds:
+      - go install .
+
+  lint:
+    cmds:
+      - golangci-lint run -c "./.golangci.yml"
+
+  fix:
+    cmds:
+      - echo "Running go mod tidy ..."
+      - go mod tidy
+      - echo "Running gofumpt ..."
+      - gofumpt -w ./internal
+      - echo "Running gci ..."
+      - gci write --skip-generated -s standard -s default -s "prefix(github.com/keboola/terraform-provider-keboola)" ./internal
+      - echo "Running golangci-lint ..."
+      - golangci-lint run --fix -c "./.golangci.yml"
+
+  test:
+    cmds:
+      - go test -count=1 -parallel=4 ./...
+
+  testacc:
+    cmds:
+      - TF_ACC=1 go test -count=1 -parallel=1 -timeout 10m -v ./...
+
+  testacc-encrypt:
+    cmds:
+      - TF_ACC=1 go test -count=1 -parallel=1 -timeout 10m -v ./... -run TestAccEncryptionResource
+
+  test-install:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/provider-install-verification" plan
+
+  test-encrypt-plan:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_encryption" plan
+
+  test-encrypt-apply:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_encryption" apply -auto-approve
+
+  test-encrypt-show:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_encryption" state show keboola_encryption.encryption_test
+
+  test-encrypt-destroy:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_encryption" apply -destroy -auto-approve
+
+  test-config-plan:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" plan
+
+  test-config-apply:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" apply -auto-approve
+
+  test-config-destroy:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" apply -destroy -auto-approve
+
+  test-config-show-state:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" state show keboola_component_configuration.ex_generic_test
+
+  test-config:
+    deps:
+      - test-config-destroy
+      - test-config-apply
+      - test-config-show-state
+
+  test-telemetry-init:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/telemetry" init
+
+  test-telemetry-plan:
+    deps:
+      - install
+      - test-telemetry-init
+    cmds:
+      - TF_LOG=info terraform -chdir="./examples/telemetry" plan
+
+  test-telemetry-apply:
+    deps:
+      - install
+      - test-telemetry-init
+    cmds:
+      - TF_LOG=info terraform -chdir="./examples/telemetry" apply -auto-approve
+
+  test-telemetry-destroy:
+    deps:
+      - install
+      - test-telemetry-init
+    cmds:
+      - terraform -chdir="./examples/telemetry" apply -destroy -auto-approve
+
+  test-telemetry-show-state:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/telemetry" state show keboola_component_configuration_row.telemetry_extractor
+
+  test-telemetry:
+    deps:
+      - test-telemetry-destroy
+      - test-telemetry-apply
+      - test-telemetry-show-state
+
+  clean-examples-state:
+    cmds:
+      - rm -r ./examples/**/**/*tfstate* || true
+      - rm -r ./examples/**/**/.terraform.lock.hcl || true
+      - rm -rf ./examples/**/**/.terraform*
+
+  clean:
+    deps: [clean-examples-state]
+    cmds:
+      - rm -rf ./examples/**/**/.terraform* 

@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 	"github.com/keboola/go-utils/pkg/orderedmap"
-	"github.com/keboola/keboola-sdk-go/pkg/keboola"
+	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/require"
 
 	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
