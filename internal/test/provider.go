@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
 
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
@@ -249,9 +250,14 @@ func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Res
 		return scheduler.NewResource()
 	}
 
+	bResource := func() resource.Resource {
+		return branch.NewResource()
+	}
+
 	return []func() resource.Resource{
 		cResource,
 		eResource,
 		sResource,
+		bResource,
 	}
 }
