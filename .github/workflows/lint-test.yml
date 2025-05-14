@@ -11,18 +11,37 @@ jobs:
         with:
           # Allow goreleaser to access older tag information.
           fetch-depth: 0
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v5
         with:
           go-version-file: "go.mod"
           cache: true
+
       - name: "golangci lint"
         uses: golangci/golangci-lint-action@v3
         with:
           # version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: v1.64.6
           args: --config=${{ github.workspace }}/.golangci.yml
+
+      - name: Install Task
+        shell: bash
+        run: |
+          GODIRS=/home/runner/.cache/go
+          mkdir -p $GODIRS/bin
+          go env -w GOBIN=$GODIRS/bin
+          echo "$GODIRS/bin" >> $GITHUB_PATH
+          TASK_PATH="$GODIRS/bin/task"
+  
+          if [ ! -f "$TASK_PATH" ]; then
+            echo "Installing Task..."
+            sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b "$(go env GOBIN)"
+            echo "Installed Task $(task --version)"
+          else
+            echo "Using cached Task $(task --version)"
+          fi
+
       - name: "acceptance tests"
         env:
           TEST_KBC_HOST: "https://connection.north-europe.azure.keboola.com"
           TEST_KBC_TOKEN: ${{ secrets.TEST_KBC_TOKEN_AZ_NE_11122 }}
-        run: "make testacc"
+        run: "task testacc"
