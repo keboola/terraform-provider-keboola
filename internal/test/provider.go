@@ -15,8 +15,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
-	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
 
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"

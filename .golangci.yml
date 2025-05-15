@@ -59,7 +59,6 @@ linters:
     - funlen # Do not abuse with lines of code for TF provider - TODO: remove
     - cyclop # Do not abuse with lines of code for TF provider`
     - gocyclo # Do not abuse with lines of code for TF provider
-    - exportloopref # replaced by copyloopvar
     - tenv # replaced by usetesting
     - gofmt
     - goimports
