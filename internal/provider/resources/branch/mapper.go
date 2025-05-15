@@ -52,7 +52,7 @@ func (m *Mapper) MapTerraformToAPI(
 // ValidateTerraformModel validates a Terraform branch model.
 func (m *Mapper) ValidateTerraformModel(
 	_ context.Context,
-	oldModel *Model,
+	_ *Model,
 	newModel *Model,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics

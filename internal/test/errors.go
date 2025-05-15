@@ -4,15 +4,15 @@ import (
 	"fmt"
 )
 
-// TestError represents attribute mismatch errors in test validations.
-type TestError struct {
+// Error represents attribute mismatch errors in test validations.
+type Error struct {
 	AttributeName string
 	ExpectedValue string
 	ActualValue   string
 }
 
-// Error implements the error interface for TestError.
-func (e *TestError) Error() string {
+// Error implements the error interface for Error.
+func (e *Error) Error() string {
 	return fmt.Sprintf(
 		"Stored configuration doesn't match state, attribute: %s \n expected: %s \n actual: %s \n",
 		e.AttributeName,
@@ -21,9 +21,9 @@ func (e *TestError) Error() string {
 	)
 }
 
-// NewAttributeMismatchError creates a new TestError for attribute mismatches.
-func NewAttributeMismatchError(attributeName, expected, actual string) *TestError {
-	return &TestError{
+// NewAttributeMismatchError creates a new Error for attribute mismatches.
+func NewAttributeMismatchError(attributeName, expected, actual string) *Error {
+	return &Error{
 		AttributeName: attributeName,
 		ExpectedValue: expected,
 		ActualValue:   actual,

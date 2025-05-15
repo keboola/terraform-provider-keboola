@@ -51,8 +51,8 @@ func TestAccSchedulerResource(t *testing.T) {
 	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 test.AccPreCheck,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"random": {
 				Source:            "hashicorp/random",
@@ -140,8 +140,8 @@ func TestSchedulerCreateWithInvalidConfigID(t *testing.T) {
 	t.Parallel()
 
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 test.AccPreCheck,
 		ExternalProviders: map[string]resource.ExternalProvider{
 			"random": {
 				Source:            "hashicorp/random",
