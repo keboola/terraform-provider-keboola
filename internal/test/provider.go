@@ -57,8 +57,8 @@ provider "keboola" {
 `
 }
 
-// TestAccProtoV6ProviderFactories returns a map of provider server factories for testing.
-func TestAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+// AccProtoV6ProviderFactories returns a map of provider server factories for testing.
+func AccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"keboola": providerserver.NewProtocol6WithError(New("test")()),
 	}
@@ -73,8 +73,8 @@ func New(version string) func() provider.Provider {
 	}
 }
 
-// TestAccPreCheck is a function to run before tests to ensure test environment is properly set up.
-func TestAccPreCheck() {
+// AccPreCheck is a function to run before tests to ensure test environment is properly set up.
+func AccPreCheck() {
 	// This can be expanded to check for required environment variables
 	if os.Getenv("TEST_KBC_HOST") == "" || os.Getenv("TEST_KBC_TOKEN") == "" { //nolint: forbidigo
 		panic("TEST_KBC_HOST and TEST_KBC_TOKEN must be set for acceptance tests")

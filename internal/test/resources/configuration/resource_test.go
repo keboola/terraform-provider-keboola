@@ -200,8 +200,8 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 func TestAccConfigResource(t *testing.T) {
 	t.Parallel()
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 test.AccPreCheck,
 		Steps: []resource.TestStep{
 			// create empty config
 			{
@@ -312,8 +312,8 @@ func TestAccConfigResource(t *testing.T) {
 func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
 	// t.Parallel()
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 test.AccPreCheck,
 		Steps: []resource.TestStep{
 			// Create configuration with initial rows
 			{
