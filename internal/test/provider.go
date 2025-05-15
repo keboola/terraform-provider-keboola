@@ -238,26 +238,18 @@ func (p *testKeboolaProvider) DataSources(_ context.Context) []func() datasource
 // Resources defines the resources implemented by the provider.
 // This adds resource factories for testing purposes only.
 func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Resource {
-	cResource := func() resource.Resource {
-		return configuration.NewResource()
-	}
-
-	eResource := func() resource.Resource {
-		return encryption.NewResource()
-	}
-
-	sResource := func() resource.Resource {
-		return scheduler.NewResource()
-	}
-
-	bResource := func() resource.Resource {
-		return branch.NewResource()
-	}
-
 	return []func() resource.Resource{
-		cResource,
-		eResource,
-		sResource,
-		bResource,
+		func() resource.Resource {
+			return configuration.NewResource()
+		},
+		func() resource.Resource {
+			return encryption.NewResource()
+		},
+		func() resource.Resource {
+			return scheduler.NewResource()
+		},
+		func() resource.Resource {
+			return branch.NewResource()
+		},
 	}
 }
