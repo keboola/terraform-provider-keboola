@@ -6,8 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -61,9 +59,14 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"name": schema.StringAttribute{
 				MarkdownDescription: "Branch name",
 				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
-				},
+			},
+			"description": schema.StringAttribute{
+				MarkdownDescription: "Branch description",
+				Optional:            true,
+			},
+			"is_default": schema.BoolAttribute{
+				MarkdownDescription: "Default flag",
+				Computed:            true,
 			},
 		},
 	}
@@ -85,7 +88,6 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 	// Set up the mapper
 	r.base.Mapper = &Mapper{
-		client:    r.client,
 		projectID: r.projectID,
 	}
 }
@@ -98,10 +100,25 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*keboola.Branch, error) {
 		// Handle API call from the mapper
 		emptyModel := Model{
-			Name: types.StringNull(),
+			ID:          types.Int64Null(),
+			Name:        types.StringNull(),
+			Description: types.StringNull(),
+			IsDefault:   types.BoolNull(),
 		}
 
-		return r.base.Mapper.MapTerraformToAPI(ctx, emptyModel, model)
+		// Map the Terraform model to the API model
+		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, emptyModel, model)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
+		}
+
+		// Call the API to create the branch
+		result, err := r.client.CreateBranchRequest(apiModel).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create branch: %w", err)
+		}
+
+		return result, nil
 	})
 }
 
@@ -131,8 +148,27 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 	// Use the base resource abstraction for Update
 	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state, plan Model) (*keboola.Branch, error) {
-		// Handle API call from the mapper
-		return r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
+		// Map the Terraform model to the API model
+		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
+		}
+
+		var changedFields []string
+		if plan.Name.ValueString() != state.Name.ValueString() {
+			changedFields = append(changedFields, "name")
+		}
+		if plan.Description.ValueString() != state.Description.ValueString() {
+			changedFields = append(changedFields, "description")
+		}
+
+		// Call the API to create the branch
+		result, err := r.client.UpdateBranchRequest(apiModel, changedFields).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create branch: %w", err)
+		}
+
+		return result, nil
 	})
 }
 

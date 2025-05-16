@@ -3,7 +3,6 @@ package metadata
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -14,7 +13,6 @@ var ErrNoMetadataID = errors.New("failed to find metadata id")
 
 // Mapper implements ResourceMapper for branch resources.
 type Mapper struct {
-	client    *keboola.AuthorizedAPI
 	projectID int
 }
 
@@ -36,44 +34,12 @@ func (m *Mapper) MapAPIToTerraform(
 
 // MapTerraformToAPI converts a Terraform branch model to a Keboola API model.
 func (m *Mapper) MapTerraformToAPI(
-	ctx context.Context,
+	_ context.Context,
 	_ Model,
 	tfModel Model,
 ) (*keboola.MetadataDetail, error) {
-	metadata := make(keboola.Metadata)
-	metadata[tfModel.Key.ValueString()] = tfModel.Value.ValueString()
-
-	// Call the API to create the branch
-	branchKey := keboola.BranchKey{
-		ID: keboola.BranchID(int(tfModel.BranchID.ValueInt64())),
-	}
-
-	_, err := m.client.AppendBranchMetadataRequest(
-		branchKey,
-		metadata,
-	).Send(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metadata: %w", err)
-	}
-
-	result, err := m.client.ListBranchMetadataRequest(branchKey).Send(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to list metadata: %w", err)
-	}
-
-	var id string
-	for _, metadataDetail := range *result {
-		if metadataDetail.Key == tfModel.Key.ValueString() {
-			id = metadataDetail.ID
-		}
-	}
-
-	if id == "" {
-		return nil, ErrNoMetadataID
-	}
-
 	return &keboola.MetadataDetail{
-		ID:    id,
+		ID:    tfModel.ID.ValueString(),
 		Key:   tfModel.Key.ValueString(),
 		Value: tfModel.Value.ValueString(),
 	}, nil

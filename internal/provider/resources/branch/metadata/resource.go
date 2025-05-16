@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
@@ -88,7 +87,6 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 	// Set up the mapper
 	r.base.Mapper = &Mapper{
-		client:    r.client,
 		projectID: r.projectID,
 	}
 }
@@ -99,15 +97,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	// Use the base resource abstraction for Create
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*keboola.MetadataDetail, error) {
-		// Handle API call from the mapper
-		emptyModel := Model{
-			ID:       types.StringNull(),
-			BranchID: types.Int64Null(),
-			Key:      types.StringNull(),
-			Value:    types.StringNull(),
-		}
-
-		return r.base.Mapper.MapTerraformToAPI(ctx, emptyModel, model)
+		return r.updateMetadata(ctx, model)
 	})
 }
 
@@ -142,9 +132,8 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 	tflog.Info(ctx, "Updating branch metadata resource")
 
 	// Use the base resource abstraction for Update
-	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state, plan Model) (*keboola.MetadataDetail, error) {
-		// Handle API call from the mapper
-		return r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
+	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, _, plan Model) (*keboola.MetadataDetail, error) {
+		return r.updateMetadata(ctx, plan)
 	})
 }
 
@@ -167,4 +156,44 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 		return nil
 	})
+}
+
+func (r *Resource) updateMetadata(ctx context.Context, model Model) (*keboola.MetadataDetail, error) {
+	metadata := make(keboola.Metadata)
+	metadata[model.Key.ValueString()] = model.Value.ValueString()
+
+	// Call the API to create the branch
+	branchKey := keboola.BranchKey{
+		ID: keboola.BranchID(int(model.BranchID.ValueInt64())),
+	}
+
+	_, err := r.client.AppendBranchMetadataRequest(
+		branchKey,
+		metadata,
+	).Send(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create metadata: %w", err)
+	}
+
+	result, err := r.client.ListBranchMetadataRequest(branchKey).Send(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list metadata: %w", err)
+	}
+
+	var id string
+	for _, metadataDetail := range *result {
+		if metadataDetail.Key == model.Key.ValueString() {
+			id = metadataDetail.ID
+		}
+	}
+
+	if id == "" {
+		return nil, ErrNoMetadataID
+	}
+
+	return &keboola.MetadataDetail{
+		ID:    id,
+		Key:   model.Key.ValueString(),
+		Value: model.Value.ValueString(),
+	}, nil
 }
