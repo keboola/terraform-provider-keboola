@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -63,6 +64,8 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"description": schema.StringAttribute{
 				MarkdownDescription: "Branch description",
 				Optional:            true,
+				Default:             stringdefault.StaticString(""),
+				Computed:            true,
 			},
 			"is_default": schema.BoolAttribute{
 				MarkdownDescription: "Default flag",
@@ -127,7 +130,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	tflog.Info(ctx, "Reading branch resource")
 
 	// Use the base resource abstraction for Read
-	r.base.ExecuteRead(ctx, req, resp, func(_ context.Context, state Model) (*keboola.Branch, error) {
+	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state Model) (*keboola.Branch, error) {
 		// Get branch with matching ID
 		branch, err := r.client.GetBranchRequest(
 			keboola.BranchKey{
@@ -177,7 +180,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	tflog.Info(ctx, "Deleting branch resource")
 
 	// Use the generic base resource implementation
-	r.base.ExecuteDelete(ctx, req, resp, func(_ context.Context, state Model) error {
+	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state Model) error {
 		// Create key from model
 		key := keboola.BranchKey{
 			ID: keboola.BranchID(state.ID.ValueInt64()),
