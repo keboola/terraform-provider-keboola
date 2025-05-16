@@ -3,12 +3,12 @@ package encryption
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
@@ -117,15 +117,24 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	// Use the base resource abstraction for Create
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*EncryptResponse, error) {
-		// Handle API call from the mapper
-		emptyModel := Model{
-			ID:             types.StringNull(),
-			ComponentID:    types.StringNull(),
-			Value:          types.StringNull(),
-			EncryptedValue: types.StringNull(),
+		// Create request body
+		requestBody := map[string]string{
+			"#value": model.Value.ValueString(),
 		}
 
-		return r.base.Mapper.MapTerraformToAPI(ctx, emptyModel, model)
+		// Call the API to encrypt the value
+		result, err := r.client.EncryptRequest(
+			r.projectID,
+			keboola.ComponentID(model.ComponentID.ValueString()),
+			requestBody,
+		).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt value: %w", err)
+		}
+
+		response := EncryptResponse(*result)
+
+		return &response, nil
 	})
 }
 
@@ -160,8 +169,25 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 			return &response, nil
 		}
 
-		// Handle API call from the mapper
-		return r.base.Mapper.MapTerraformToAPI(ctx, state, plan)
+		// Create request body
+		requestBody := map[string]string{
+			"#value": plan.Value.ValueString(),
+		}
+
+		// Call the API to encrypt the value
+		result, err := r.client.EncryptRequest(
+			r.projectID,
+			keboola.ComponentID(plan.ComponentID.ValueString()),
+			requestBody,
+		).Send(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encrypt value: %w", err)
+		}
+
+		// Convert to our custom response type
+		response := EncryptResponse(*result)
+
+		return &response, nil
 	})
 }
 
