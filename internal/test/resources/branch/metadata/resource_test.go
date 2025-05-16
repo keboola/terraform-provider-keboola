@@ -43,25 +43,27 @@ func TestAccBranchMetadataResource(t *testing.T) {
 			// Create a branch
 			{
 				Config: test.ProviderConfig() +
-					testResource("keboola_branch", "test", map[string]any{
-						"name": "test2",
+					testResource("keboola_branch", "test1", map[string]any{
+						"name": "test1",
 					}) +
 					testResource("keboola_branch_metadata", "description", map[string]any{
-						"branch_id": "${keboola_branch.test.id}",
+						"branch_id": "${keboola_branch.test1.id}",
 						"key":       "description",
 						"value":     "Test Branch Description",
 					}),
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttrSet("keboola_branch.test", "id"),
-					resource.TestCheckResourceAttrSet("keboola_branch.test", "name"),
+					resource.TestCheckResourceAttrSet("keboola_branch.test1", "id"),
+					resource.TestCheckResourceAttrSet("keboola_branch.test1", "name"),
 					resource.TestCheckResourceAttrSet("keboola_branch_metadata.description", "key"),
 					resource.TestCheckResourceAttrSet("keboola_branch_metadata.description", "value"),
 				),
 			},
 			// Attempt to update the branch metadata
 			{
-				Config: test.ProviderConfig() + testResource("keboola_branch_metadata", "description", map[string]any{
-					"branch_id": "${keboola_branch.test.id}",
+				Config: test.ProviderConfig() + testResource("keboola_branch", "test1", map[string]any{
+					"name": "test1",
+				}) + testResource("keboola_branch_metadata", "description", map[string]any{
+					"branch_id": "${keboola_branch.test1.id}",
 					"key":       "description",
 					"value":     "Test Branch New Description",
 				}),

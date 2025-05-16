@@ -53,7 +53,8 @@ func TestAccBranchResource(t *testing.T) {
 			// Attempt to update the branch
 			{
 				Config: test.ProviderConfig() + testBranchResource("test", map[string]any{
-					"name": "test2",
+					"name":        "test2",
+					"description": "test description",
 				}),
 				Destroy: true,
 			},

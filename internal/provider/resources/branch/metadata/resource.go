@@ -106,7 +106,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	tflog.Info(ctx, "Reading branch metadata resource")
 
 	// Use the base resource abstraction for Read
-	r.base.ExecuteRead(ctx, req, resp, func(_ context.Context, state Model) (*keboola.MetadataDetail, error) {
+	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state Model) (*keboola.MetadataDetail, error) {
 		// Get metadata with matching ID
 		branch, err := r.client.ListBranchMetadataRequest(
 			keboola.BranchKey{
@@ -142,7 +142,7 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	tflog.Info(ctx, "Deleting branch metadata resource")
 
 	// Use the generic base resource implementation
-	r.base.ExecuteDelete(ctx, req, resp, func(_ context.Context, state Model) error {
+	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state Model) error {
 		// Create key from model
 		key := keboola.BranchKey{
 			ID: keboola.BranchID(state.BranchID.ValueInt64()),
