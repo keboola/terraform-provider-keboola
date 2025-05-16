@@ -23,11 +23,6 @@ var (
 	}
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() *Resource {
-	return &Resource{}
-}
-
 // Resource is the branch resource implementation.
 type Resource struct {
 	// Base functionality with branch model specifics
@@ -36,6 +31,11 @@ type Resource struct {
 	// Direct access to the API client for specific operations
 	client    *keboola.AuthorizedAPI
 	projectID int
+}
+
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() *Resource {
+	return &Resource{}
 }
 
 // Metadata returns the resource type name.

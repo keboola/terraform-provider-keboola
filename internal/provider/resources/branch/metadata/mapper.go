@@ -10,6 +10,8 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 )
 
+var ErrNoMetadataID = errors.New("failed to find metadata id")
+
 // Mapper implements ResourceMapper for branch resources.
 type Mapper struct {
 	client    *keboola.AuthorizedAPI
@@ -67,7 +69,7 @@ func (m *Mapper) MapTerraformToAPI(
 	}
 
 	if id == "" {
-		return nil, errors.New("failed to find metadata id")
+		return nil, ErrNoMetadataID
 	}
 
 	return &keboola.MetadataDetail{
