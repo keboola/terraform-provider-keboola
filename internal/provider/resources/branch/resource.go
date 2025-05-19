@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
@@ -101,16 +100,8 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 	// Use the base resource abstraction for Create
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*keboola.Branch, error) {
-		// Handle API call from the mapper
-		emptyModel := Model{
-			ID:          types.Int64Null(),
-			Name:        types.StringNull(),
-			Description: types.StringNull(),
-			IsDefault:   types.BoolNull(),
-		}
-
 		// Map the Terraform model to the API model
-		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, emptyModel, model)
+		apiModel, err := r.base.Mapper.MapTerraformToAPI(ctx, Model{}, model)
 		if err != nil {
 			return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
 		}
