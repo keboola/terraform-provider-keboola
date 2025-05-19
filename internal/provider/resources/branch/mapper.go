@@ -38,26 +38,10 @@ func (m *Mapper) MapTerraformToAPI(
 ) (*keboola.Branch, error) {
 	// Create a new Branch instance
 	branch := &keboola.Branch{}
-
-	// Map ID if it exists in the state
-	if !stateModel.ID.IsNull() && stateModel.ID.ValueInt64() != 0 {
-		branch.ID = keboola.BranchID(stateModel.ID.ValueInt64())
-	}
-
-	// Map name
-	if !tfModel.Name.IsNull() {
-		branch.Name = tfModel.Name.ValueString()
-	}
-
-	// Map description
-	if !tfModel.Description.IsNull() {
-		branch.Description = tfModel.Description.ValueString()
-	}
-
-	// Map default flag
-	if !tfModel.IsDefault.IsNull() {
-		branch.IsDefault = tfModel.IsDefault.ValueBool()
-	}
+	branch.ID = keboola.BranchID(stateModel.ID.ValueInt64())
+	branch.Name = tfModel.Name.ValueString()
+	branch.Description = tfModel.Description.ValueString()
+	branch.IsDefault = tfModel.IsDefault.ValueBool()
 
 	return branch, nil
 }
