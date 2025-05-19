@@ -2,7 +2,6 @@ package encryption
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -39,30 +38,13 @@ func (m *Mapper) MapAPIToTerraform(
 }
 
 // MapTerraformToAPI converts a Terraform encryption model to a Keboola API model.
+// For encryption resource we are not able to reconstruct this object.
 func (m *Mapper) MapTerraformToAPI(
-	ctx context.Context,
+	_ context.Context,
 	_ Model,
-	tfModel Model,
+	_ Model,
 ) (*EncryptResponse, error) {
-	// Create request body
-	requestBody := map[string]string{
-		"#value": tfModel.Value.ValueString(),
-	}
-
-	// Call the API to encrypt the value
-	result, err := m.client.EncryptRequest(
-		m.projectID,
-		keboola.ComponentID(tfModel.ComponentID.ValueString()),
-		requestBody,
-	).Send(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to encrypt value: %w", err)
-	}
-
-	// Convert to our custom response type
-	response := EncryptResponse(*result)
-
-	return &response, nil
+	return nil, nil //nolint: nilnil
 }
 
 // ValidateTerraformModel validates a Terraform encryption model.
