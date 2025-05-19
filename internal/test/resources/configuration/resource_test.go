@@ -14,7 +14,7 @@ import (
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 	"github.com/stretchr/testify/require"
 
-	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
+	"github.com/keboola/terraform-provider-keboola/internal/test"
 )
 
 func exGenericResource(resourceID string, resourceDefinition map[string]any) string {
@@ -76,7 +76,7 @@ func checkAllAttributesSet(resourceID string) resource.TestCheckFunc {
 
 func checkAttribute(attributeName, actualValue, expectedValue string) error {
 	if actualValue != expectedValue {
-		return provider_test.NewAttributeMismatchError(attributeName, expectedValue, actualValue)
+		return test.NewAttributeMismatchError(attributeName, expectedValue, actualValue)
 	}
 
 	return nil
@@ -89,7 +89,7 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return provider_test.NewResourceNotFoundError(resourceName)
+			return test.NewResourceNotFoundError(resourceName)
 		}
 
 		host := os.Getenv("TEST_KBC_HOST")   //nolint: forbidigo
@@ -154,7 +154,7 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 		expectedContentStr := attributes["configuration"]
 		err = expectedContent.UnmarshalJSON([]byte(expectedContentStr))
 		if err != nil {
-			return provider_test.NewConfigParseError(err)
+			return test.NewConfigParseError(err)
 		}
 		actualBytes, err := actualContent.MarshalJSON()
 		if err != nil {
@@ -173,13 +173,13 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[resourceName]
 		if !ok {
-			return provider_test.NewResourceNotFoundError(resourceName)
+			return test.NewResourceNotFoundError(resourceName)
 		}
 		configStr := rs.Primary.Attributes["configuration"]
 		configMap := orderedmap.New()
 		err := configMap.UnmarshalJSON([]byte(configStr))
 		if err != nil {
-			return provider_test.NewConfigParseError(err)
+			return test.NewConfigParseError(err)
 		}
 		path := orderedmap.PathFromStr(path)
 		value, found, err := configMap.GetNestedPath(path)
@@ -187,10 +187,10 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 			return fmt.Errorf("Get path failed: %w", err)
 		}
 		if !found {
-			return provider_test.NewPathNotFoundError(path.String())
+			return test.NewPathNotFoundError(path.String())
 		}
 		if value != expectedValue {
-			return provider_test.NewPathValueMismatchError(path.String(), expectedValue, value)
+			return test.NewPathValueMismatchError(path.String(), expectedValue, value)
 		}
 
 		return nil
@@ -200,12 +200,12 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 func TestAccConfigResource(t *testing.T) {
 	t.Parallel()
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 provider_test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 test.AccPreCheck,
 		Steps: []resource.TestStep{
 			// create empty config
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("testempty", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("testempty", map[string]any{
 					"name": "test empty config",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -218,7 +218,7 @@ func TestAccConfigResource(t *testing.T) {
 			},
 			// Create and Read testing
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{
 					"name": "test config",
 					"configuration": `{
 						"a": 1,
@@ -237,7 +237,7 @@ func TestAccConfigResource(t *testing.T) {
 			},
 			// Update with empty configuration
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{
 					"name":               "test config",
 					"is_disabled":        true,
 					"change_description": "new change",
@@ -254,7 +254,7 @@ func TestAccConfigResource(t *testing.T) {
 			},
 			// Update with some configuration
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{
 					"name":               "test config",
 					"change_description": "update by Keboola terraform provider",
 					"configuration": `{
@@ -280,7 +280,7 @@ func TestAccConfigResource(t *testing.T) {
 			},
 			// Change configuration id - expects error
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{
 					"name":             "test config",
 					"configuration_id": "aaa",
 				}),
@@ -288,7 +288,7 @@ func TestAccConfigResource(t *testing.T) {
 			},
 			// create configuration with id
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("configwithid", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("configwithid", map[string]any{
 					"name":             "test config with id",
 					"configuration_id": "mycustomconfiguid123",
 					"configuration": `{
@@ -312,12 +312,12 @@ func TestAccConfigResource(t *testing.T) {
 func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
 	// t.Parallel()
 	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
-		PreCheck:                 provider_test.TestAccPreCheck,
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 test.AccPreCheck,
 		Steps: []resource.TestStep{
 			// Create configuration with initial rows
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
 					"name": "test config with rows",
 					"configuration": `{
 						"parameters": {
@@ -367,7 +367,7 @@ func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
 			},
 			// Update existing rows
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
 					"name": "test config with rows",
 					"configuration": `{
 						"parameters": {
@@ -414,7 +414,7 @@ func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
 			},
 			// Add a new row
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
 					"name": "test config with rows",
 					"configuration": `{
 						"parameters": {
@@ -473,7 +473,7 @@ func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
 			},
 			// Remove rows
 			{
-				Config: provider_test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
+				Config: test.ProviderConfig() + exGenericResource("test_rows", map[string]any{
 					"name": "test config with rows",
 					"configuration": `{
 						"parameters": {

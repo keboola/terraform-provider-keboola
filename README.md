@@ -4,8 +4,8 @@ Implementation of a Terraform provider managing resources of [Keboola Storage AP
 The provider is built with [**Terraform Plugin Framework**](https://developer.hashicorp.com/terraform/plugin/framework).
 The provider repository: https://registry.terraform.io/providers/keboola/keboola
 
-
 ## Usage Example
+
 ```hcl
 # 1. Specify the version of the Keboola Provider to use
 terraform {
@@ -44,17 +44,18 @@ resource "keboola_component_configuration" "example" {
 ### Learn about plugin development
 
 #### Must read
-- Design principles - https://developer.hashicorp.com/terraform/plugin/hashicorp-provider-design-principles
-- Custom provider development tutorial (especially all the "Implement *" articles) - https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework
+- Design principles: https://developer.hashicorp.com/terraform/plugin/hashicorp-provider-design-principles
+- Custom provider development tutorial (especially all the "Implement *" articles): https://developer.hashicorp.com/terraform/tutorials/providers-plugin-framework
 
 #### Worth read
-- General docs on plugin developmnet - https://developer.hashicorp.com/terraform/plugin
-- Terraform plugin framework docs - https://developer.hashicorp.com/terraform/plugin/framework
-- Example plugin code - https://github.com/hashicorp/terraform-provider-scaffolding-framework
+- General docs on plugin development: https://developer.hashicorp.com/terraform/plugin
+- Terraform plugin framework docs: https://developer.hashicorp.com/terraform/plugin/framework
+- Example plugin code: https://github.com/hashicorp/terraform-provider-scaffolding-framework
 
 ### Setup Environment
 
 #### Install developer tools
+
 * [Terraform (Core)](https://www.terraform.io/downloads.html) - version v1.0.3 and later
 * [Go](https://golang.org/doc/install) version 1.18.x and later (to build the provider plugin)
 #### Install Keboola terraform provider locally
@@ -62,13 +63,12 @@ Create `.terraformrc` file and place it into your home directory (see [docs](htt
 
 ```hcl
 provider_installation {
-
-  # Use /home/developer/go/bin (or value of "go env GOBIN" command) as an overridden package directory
+  # Use /home/developer/go/bin (or value of "echo $(go env GOPATH)/bin" command) as an overridden package directory
   # for the keboola/keboola provider. This disables the version and checksum
   # verifications for this provider and forces Terraform to look for the
   # keboola provider plugin in the given directory.
   dev_overrides {
-    "registry.terraform.io/keboola/keboola" = "<FILL_GOBIN_PATH>"
+    "registry.terraform.io/keboola/keboola" = "<FILL_GO_BIN_PATH>"
   }
 
   # For all other providers, install them directly from their origin provider
@@ -78,14 +78,16 @@ provider_installation {
 }
 ```
 
-Verfiy the correct setup by calling **`make test-install`** - this should succesfully finish with `Warning: Provider development overrides are in effect`.
+Verify the correct setup by calling **`make test-install`** - this should successfully finish with `Warning: Provider development overrides are in effect`.
 
-#### Setup test envs for local developmment
-Define envs `TEST_KBC_HOST` and `TEST_KBC_TOKEN` and run **`make testacc`** - this should succesfully run acceptance tests.
+#### Setup test envs for local development
+
+Define envs `TEST_KBC_HOST` and `TEST_KBC_TOKEN` and run **`make testacc`** - this should successfully run acceptance tests.
 Alternatively you can run Terraform CLI commands (terraform plan, terraform apply) on the terraform files with "keboola/keboola" provider resources (e.g. see `examples` directory).
 
 ### Develop
-To develop new resource follow these stops:
+
+To develop a new resource, follow these stops:
 - Create sample example resource in the `examples` directory.
 - Implement resource or data_source in the `keboola` directory.
 - Implement acceptance tests.
@@ -93,6 +95,7 @@ To develop new resource follow these stops:
 - Create a pull request and have it reviewed and released.
 
 ### Roadmap
+
 - Add support for config rows provisioning
 - Add support for terraform import of keboola_component_configuration
 - Add support for buckets and tables provisioning

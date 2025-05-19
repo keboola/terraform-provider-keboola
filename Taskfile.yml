@@ -44,6 +44,26 @@ tasks:
     cmds:
       - terraform -chdir="./examples/provider-install-verification" plan
 
+  test-branch-plan:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_branch" plan
+
+  test-branch-apply:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_branch" apply -auto-approve
+
+  test-branch-show:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_branch" state show keboola_branch.branch_test
+
+  test-branch-destroy:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_branch" apply -destroy -auto-approve
+
   test-encrypt-plan:
     deps: [install]
     cmds:
