@@ -10,8 +10,9 @@ import (
 
 // the provider and resources without creating circular dependencies.
 type ProviderData struct {
-	Client *keboola.AuthorizedAPI
-	Token  *keboola.Token
+	Client     *keboola.AuthorizedAPI
+	Token      *keboola.Token
+	Components []*keboola.Component
 }
 
 // GetClient returns the keboola API client.

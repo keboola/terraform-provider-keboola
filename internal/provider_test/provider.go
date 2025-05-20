@@ -202,11 +202,23 @@ func (p *testKeboolaProvider) Configure(
 		return
 	}
 
+	// Retrieve all components from Keboola Connection
+	tflog.Info(ctx, "Fetching all components from Keboola Connection")
+	// The IndexComponentsRequest retrieves all components available in the Keboola Connection project.
+	// This is a one-time fetch during provider configuration to avoid repeated API calls.
+	stackComponents, err := sapiClient.IndexComponentsRequest().Send(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to retrieve components from Keboola Connection", err.Error())
+
+		return
+	}
+
 	// Make the Keboola client available during DataSource and Resource
 	// type Configure methods.
 	data := &providermodels.ProviderData{
-		Client: sapiClient,
-		Token:  tokenObject,
+		Client:     sapiClient,
+		Token:      tokenObject,
+		Components: stackComponents.Components,
 	}
 
 	// Set the provider data

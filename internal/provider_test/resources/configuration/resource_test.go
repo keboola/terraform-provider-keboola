@@ -17,9 +17,10 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/provider_test"
 )
 
-func exGenericResource(resourceID string, resourceDefinition map[string]any) string {
-	result := `	resource "keboola_component_configuration" "` + resourceID + `" {
-		component_id = "ex-generic-v2"`
+// buildKeboolaConfigurationHCL is a helper function to generate HCL for keboola_component_configuration.
+func buildKeboolaConfigurationHCL(resourceID, componentID string, resourceDefinition map[string]any) string {
+	result := fmt.Sprintf(`resource "keboola_component_configuration" "%s" {
+		component_id = "%s"`, resourceID, componentID)
 	for attribute, value := range resourceDefinition {
 		var pair string
 		switch v := value.(type) {
@@ -54,6 +55,14 @@ func exGenericResource(resourceID string, resourceDefinition map[string]any) str
 	` + " }\n"
 
 	return result
+}
+
+func notFoundComponentResource(resourceID string, resourceDefinition map[string]any) string {
+	return buildKeboolaConfigurationHCL(resourceID, "not-existing-component-id", resourceDefinition)
+}
+
+func exGenericResource(resourceID string, resourceDefinition map[string]any) string {
+	return buildKeboolaConfigurationHCL(resourceID, "ex-generic-v2", resourceDefinition)
 }
 
 func checkAllAttributesSet(resourceID string) resource.TestCheckFunc {
@@ -203,6 +212,13 @@ func TestAccConfigResource(t *testing.T) {
 		ProtoV6ProviderFactories: provider_test.TestAccProtoV6ProviderFactories(),
 		PreCheck:                 provider_test.TestAccPreCheck,
 		Steps: []resource.TestStep{
+			// create empty config
+			{
+				Config: provider_test.ProviderConfig() + notFoundComponentResource("testnonexistingcomponent", map[string]any{
+					"name": "test nonexisting component config",
+				}),
+				ExpectError: regexp.MustCompile("Invalid Component ID"),
+			},
 			// create empty config
 			{
 				Config: provider_test.ProviderConfig() + exGenericResource("testempty", map[string]any{
