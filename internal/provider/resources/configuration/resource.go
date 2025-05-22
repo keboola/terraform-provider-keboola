@@ -50,6 +50,10 @@ type Resource struct {
 	// Direct access to the API client for specific operations
 	client *keboola.AuthorizedAPI
 	isTest bool
+
+	// List of components available in the project, fetched during provider configuration.
+	// This is used to validate the component_id provided in the resource configuration.
+	availableComponents []*keboola.Component
 }
 
 // Metadata returns the resource type name.
@@ -205,6 +209,8 @@ func (r *Resource) Configure(
 	// Get the provider data - ignoring the type assertion success
 	providerData, _ := req.ProviderData.(*providermodels.ProviderData)
 	r.client = providerData.Client
+	// Store the fetched components from provider data for validation purposes.
+	r.availableComponents = providerData.Components
 	r.isTest = os.Getenv("TF_ACC") != "" //nolint: forbidigo
 
 	// Set up the mapper
@@ -213,7 +219,8 @@ func (r *Resource) Configure(
 			Client: r.client,
 			isTest: r.isTest,
 		},
-		isTest: r.isTest,
+		isTest:              r.isTest,
+		AvailableComponents: r.availableComponents,
 	}
 }
 

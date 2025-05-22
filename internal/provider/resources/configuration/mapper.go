@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/keboola/go-utils/pkg/orderedmap"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
@@ -26,6 +27,10 @@ type ConfigMapper struct {
 	// Nested resource handler for rows
 	RowHandler *DefaultConfigRowHandler
 	isTest     bool
+
+	// List of components available in the project, passed from the resource.
+	// This is used to validate the component_id.
+	AvailableComponents []*keboola.Component
 }
 
 // MapAPIToTerraform converts a Keboola API config model to a Terraform model.
@@ -145,6 +150,31 @@ func (m *ConfigMapper) ValidateTerraformModel(
 			diags.AddError(
 				"Error updating configuration",
 				"Cannot change configuration_id after configuration is created",
+			)
+		}
+	}
+
+	// Validate that the provided component_id exists in the list of available project components.
+	if !newModel.ComponentID.IsUnknown() && !newModel.ComponentID.IsNull() {
+		componentIDValue := newModel.ComponentID.ValueString()
+		found := false
+		for _, c := range m.AvailableComponents {
+			if c.ID.String() == componentIDValue {
+				found = true
+
+				break
+			}
+		}
+		if !found {
+			errMsg := fmt.Sprintf(
+				"Component ID '%s' does not exist in the project or is not available. "+
+					"Please check the component ID.",
+				componentIDValue,
+			)
+			diags.AddAttributeError(
+				path.Root("component_id"),
+				"Invalid Component ID",
+				errMsg,
 			)
 		}
 	}
