@@ -1,5 +1,5 @@
-// Package provider_test provides acceptance testing utilities for the Keboola Terraform provider
-package provider_test
+// Package test provides acceptance testing utilities for the Keboola Terraform provider
+package test
 
 import (
 	"context"
@@ -16,6 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch/metadata"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"
@@ -56,8 +58,8 @@ provider "keboola" {
 `
 }
 
-// TestAccProtoV6ProviderFactories returns a map of provider server factories for testing.
-func TestAccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
+// AccProtoV6ProviderFactories returns a map of provider server factories for testing.
+func AccProtoV6ProviderFactories() map[string]func() (tfprotov6.ProviderServer, error) {
 	return map[string]func() (tfprotov6.ProviderServer, error){
 		"keboola": providerserver.NewProtocol6WithError(New("test")()),
 	}
@@ -72,8 +74,8 @@ func New(version string) func() provider.Provider {
 	}
 }
 
-// TestAccPreCheck is a function to run before tests to ensure test environment is properly set up.
-func TestAccPreCheck() {
+// AccPreCheck is a function to run before tests to ensure test environment is properly set up.
+func AccPreCheck() {
 	// This can be expanded to check for required environment variables
 	if os.Getenv("TEST_KBC_HOST") == "" || os.Getenv("TEST_KBC_TOKEN") == "" { //nolint: forbidigo
 		panic("TEST_KBC_HOST and TEST_KBC_TOKEN must be set for acceptance tests")
@@ -237,21 +239,21 @@ func (p *testKeboolaProvider) DataSources(_ context.Context) []func() datasource
 // Resources defines the resources implemented by the provider.
 // This adds resource factories for testing purposes only.
 func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Resource {
-	cResource := func() resource.Resource {
-		return configuration.NewResource()
-	}
-
-	eResource := func() resource.Resource {
-		return encryption.NewResource()
-	}
-
-	sResource := func() resource.Resource {
-		return scheduler.NewResource()
-	}
-
 	return []func() resource.Resource{
-		cResource,
-		eResource,
-		sResource,
+		func() resource.Resource {
+			return configuration.NewResource()
+		},
+		func() resource.Resource {
+			return encryption.NewResource()
+		},
+		func() resource.Resource {
+			return scheduler.NewResource()
+		},
+		func() resource.Resource {
+			return branch.NewResource()
+		},
+		func() resource.Resource {
+			return metadata.NewResource()
+		},
 	}
 }

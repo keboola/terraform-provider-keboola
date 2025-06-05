@@ -42,14 +42,14 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	var diags diag.Diagnostics
 
 	// Map basic properties
-	tfModel.ConfigID = types.StringValue(apiModel.Config.ID.String())
-	tfModel.BranchID = types.Int64Value(int64(apiModel.Config.BranchID))
-	tfModel.ComponentID = types.StringValue(string(apiModel.Config.ComponentID))
-	tfModel.Name = types.StringValue(apiModel.Config.Name)
-	tfModel.Description = types.StringValue(apiModel.Config.Description)
-	tfModel.ChangeDescription = types.StringValue(apiModel.Config.ChangeDescription)
-	tfModel.IsDeleted = types.BoolValue(apiModel.Config.IsDeleted)
-	tfModel.IsDisabled = types.BoolValue(apiModel.Config.IsDisabled)
+	tfModel.ConfigID = types.StringValue(apiModel.ID.String())
+	tfModel.BranchID = types.Int64Value(int64(apiModel.BranchID))
+	tfModel.ComponentID = types.StringValue(string(apiModel.ComponentID))
+	tfModel.Name = types.StringValue(apiModel.Name)
+	tfModel.Description = types.StringValue(apiModel.Description)
+	tfModel.ChangeDescription = types.StringValue(apiModel.ChangeDescription)
+	tfModel.IsDeleted = types.BoolValue(apiModel.IsDeleted)
+	tfModel.IsDisabled = types.BoolValue(apiModel.IsDisabled)
 	tfModel.Created = types.StringValue(apiModel.Config.Created.UTC().String())
 
 	// Set the compound ID
@@ -57,7 +57,7 @@ func (m *ConfigMapper) MapAPIToTerraform(
 
 	// Map configuration content
 	tfModel.Content = types.StringValue("{}")
-	processConfigContent(apiModel.Config.Content, &tfModel.Content, m.isTest, &diags)
+	processConfigContent(apiModel.Content, &tfModel.Content, m.isTest, &diags)
 
 	// Process rows if they exist
 	if len(apiModel.Rows) > 0 {

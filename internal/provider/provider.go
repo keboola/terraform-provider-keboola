@@ -13,6 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/keboola/keboola-sdk-go/v2/pkg/keboola"
 
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch/metadata"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"
@@ -226,21 +228,21 @@ func (p *keboolaProvider) DataSources(_ context.Context) []func() datasource.Dat
 
 // Resources defines the resources implemented by the provider.
 func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resource {
-	cResource := func() resource.Resource {
-		return configuration.NewResource()
-	}
-
-	eResource := func() resource.Resource {
-		return encryption.NewResource()
-	}
-
-	sResource := func() resource.Resource {
-		return scheduler.NewResource()
-	}
-
 	return []func() resource.Resource{
-		cResource,
-		eResource,
-		sResource,
+		func() resource.Resource {
+			return configuration.NewResource()
+		},
+		func() resource.Resource {
+			return encryption.NewResource()
+		},
+		func() resource.Resource {
+			return scheduler.NewResource()
+		},
+		func() resource.Resource {
+			return branch.NewResource()
+		},
+		func() resource.Resource {
+			return metadata.NewResource()
+		},
 	}
 }

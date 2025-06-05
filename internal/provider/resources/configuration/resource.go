@@ -33,15 +33,6 @@ var (
 	}
 )
 
-// NewResource is a helper function to simplify the provider implementation.
-func NewResource() *Resource {
-	return &Resource{
-		base:   abstraction.BaseResource[ConfigModel, *keboola.ConfigWithRows]{},
-		client: nil,
-		isTest: false,
-	}
-}
-
 // Resource is the configuration resource implementation.
 type Resource struct {
 	// Base functionality with config model specifics
@@ -54,6 +45,15 @@ type Resource struct {
 	// List of components available in the project, fetched during provider configuration.
 	// This is used to validate the component_id provided in the resource configuration.
 	availableComponents []*keboola.Component
+}
+
+// NewResource is a helper function to simplify the provider implementation.
+func NewResource() *Resource {
+	return &Resource{
+		base:   abstraction.BaseResource[ConfigModel, *keboola.ConfigWithRows]{},
+		client: nil,
+		isTest: false,
+	}
 }
 
 // Metadata returns the resource type name.
