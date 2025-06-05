@@ -214,7 +214,7 @@ func TestAccConfigResource(t *testing.T) {
 		Steps: []resource.TestStep{
 			// create empty config
 			{
-				Config: provider_test.ProviderConfig() + notFoundComponentResource("testnonexistingcomponent", map[string]any{
+				Config: test.ProviderConfig() + notFoundComponentResource("testnonexistingcomponent", map[string]any{
 					"name": "test nonexisting component config",
 				}),
 				ExpectError: regexp.MustCompile("Invalid Component ID"),
