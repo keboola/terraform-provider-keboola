@@ -181,6 +181,7 @@ func (r *Resource) updateMetadata(ctx context.Context, model Model) (*keboola.Me
 	}
 
 	var id string
+
 	for _, metadataDetail := range *result {
 		if metadataDetail.Key == model.Key.ValueString() {
 			id = metadataDetail.ID

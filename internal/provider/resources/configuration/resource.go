@@ -142,6 +142,10 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"fqn": schema.StringAttribute{
+				Description: "Fully qualified name for the configuration, composed as branch_id/component_id/configuration_id.",
+				Computed:    true,
+			},
 			"rows": schema.ListNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
@@ -236,6 +240,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 			if err != nil {
 				return nil, fmt.Errorf("could not get default branch: %w", err)
 			}
+
 			plan.BranchID = types.Int64Value(int64(branch.ID))
 		}
 

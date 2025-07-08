@@ -31,3 +31,13 @@ resource "keboola_component_configuration" "ex_generic_test" {
 }
 EOT
 }
+
+# Example: Create a configuration row using the new resource
+resource "keboola_configuration_row" "example_row" {
+  # You can use either the fqn or the branch_id/component_id/configuration_id triplet
+  fqn = keboola_component_configuration.ex_generic_test.fqn
+
+  # Optionally, you can provide additional fields as needed
+  # id = "row-id" # Uncomment to provide a custom row ID
+  # ... add other attributes as needed ...
+}

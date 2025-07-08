@@ -51,8 +51,10 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 
 	// Get plan data
 	var plan TfModel
+
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -60,6 +62,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	// Validate the plan
 	diags = r.Mapper.ValidateTerraformModel(ctx, nil, &plan)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -78,6 +81,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteCreate(
 	// Map API model back to Terraform model
 	diags = r.Mapper.MapAPIToTerraform(ctx, apiModel, &plan)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -100,8 +104,10 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 
 	// Get current state
 	var state TfModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -135,6 +141,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteRead(
 	// Map API model back to Terraform model
 	diags = r.Mapper.MapAPIToTerraform(ctx, apiModel, &state)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -167,14 +174,17 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 
 	// Get plan and state
 	var plan, state TfModel
+
 	diags := req.Plan.Get(ctx, &plan)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	diags = req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -182,6 +192,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	// Validate the plan
 	diags = r.Mapper.ValidateTerraformModel(ctx, &state, &plan)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -213,6 +224,7 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteUpdate(
 	// Map API model back to Terraform model
 	diags = r.Mapper.MapAPIToTerraform(ctx, apiModel, &plan)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -235,8 +247,10 @@ func (r *BaseResource[TfModel, ApiModel]) ExecuteDelete(
 
 	// Get current state
 	var state TfModel
+
 	diags := req.State.Get(ctx, &state)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}

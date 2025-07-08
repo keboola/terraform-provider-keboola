@@ -12,6 +12,7 @@ import (
 
 func testResource(name, resourceID string, resourceDefinition map[string]any) string {
 	result := `resource "` + name + `" "` + resourceID + `" {`
+
 	for attribute, value := range resourceDefinition {
 		var pair string
 		switch v := value.(type) {
@@ -20,8 +21,10 @@ func testResource(name, resourceID string, resourceDefinition map[string]any) st
 		default:
 			pair = fmt.Sprintf("%s = %v ", attribute, v)
 		}
+
 		result = result + "\n" + pair
 	}
+
 	result = result + "\n" + "}\n"
 
 	return result

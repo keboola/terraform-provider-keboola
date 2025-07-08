@@ -55,14 +55,20 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	// Set the compound ID
 	tfModel.ID = types.StringValue(GetConfigModelID(tfModel))
 
+	// Set the fully qualified name (fqn) as branch_id/component_id/configuration_id
+	tfModel.FQN = types.StringValue(GetConfigModelID(tfModel))
+
 	// Map configuration content
 	tfModel.Content = types.StringValue("{}")
 	processConfigContent(apiModel.Content, &tfModel.Content, m.isTest, &diags)
 
-	// Process rows if they exist
-	if len(apiModel.Rows) > 0 {
+	// Only set rows if they exist in the config (i.e., if the user provided them)
+	if len(apiModel.Rows) > 0 && !tfModel.Rows.IsNull() && !tfModel.Rows.IsUnknown() {
 		rowDiags := m.RowHandler.ProcessAPIChildModels(ctx, tfModel, apiModel.Rows)
 		diags.Append(rowDiags...)
+	} else {
+		// Set rows to null if not present
+		tfModel.Rows = types.ListNull(tfModel.Rows.ElementType(ctx))
 	}
 
 	return diags
@@ -158,6 +164,7 @@ func (m *ConfigMapper) ValidateTerraformModel(
 	if !newModel.ComponentID.IsUnknown() && !newModel.ComponentID.IsNull() {
 		componentIDValue := newModel.ComponentID.ValueString()
 		found := false
+
 		for _, c := range m.AvailableComponents {
 			if c.ID.String() == componentIDValue {
 				found = true
@@ -165,6 +172,7 @@ func (m *ConfigMapper) ValidateTerraformModel(
 				break
 			}
 		}
+
 		if !found {
 			errMsg := fmt.Sprintf(
 				"Component ID '%s' does not exist in the project or is not available. "+
@@ -182,6 +190,7 @@ func (m *ConfigMapper) ValidateTerraformModel(
 	// Validate content JSON
 	if !newModel.Content.IsNull() && !newModel.Content.IsUnknown() {
 		contentMap := orderedmap.New()
+
 		err := contentMap.UnmarshalJSON([]byte(newModel.Content.ValueString()))
 		if err != nil {
 			diags.AddError(
@@ -266,7 +275,7 @@ func processConfigContent(
 		return
 	}
 
-	// Marshal the content
+	// Marshal the content as minified JSON
 	contentBytes, err := json.Marshal(content)
 	if err != nil {
 		diags.AddWarning(
@@ -277,7 +286,7 @@ func processConfigContent(
 		return
 	}
 
-	// Set regular content
+	// Always set as minified JSON
 	*targetContent = types.StringValue(string(contentBytes))
 
 	// Apply test mode formatting if needed
@@ -311,6 +320,7 @@ func processUnknownRows(
 	// If no old model, set empty list
 	if oldModel == nil {
 		var listDiags diag.Diagnostics
+
 		newModel.Rows, listDiags = types.ListValue(types.StringType, []attr.Value{})
 		diags.Append(listDiags...)
 
@@ -352,6 +362,7 @@ func updateRowsInModel(
 	diags diag.Diagnostics,
 ) diag.Diagnostics {
 	rowType := model.Rows.Type(ctx)
+
 	elemType, ok := rowType.(types.ListType)
 	if !ok {
 		diags.AddError(
@@ -364,6 +375,7 @@ func updateRowsInModel(
 
 	updatedRows, rowDiags := types.ListValueFrom(ctx, elemType.ElemType, rows)
 	diags.Append(rowDiags...)
+
 	if !rowDiags.HasError() {
 		model.Rows = updatedRows
 	}

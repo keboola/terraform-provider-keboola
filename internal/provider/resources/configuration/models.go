@@ -20,6 +20,8 @@ type ConfigModel struct {
 	IsDisabled        types.Bool   `tfsdk:"is_disabled"`
 	Content           types.String `tfsdk:"configuration"`
 	Rows              types.List   `tfsdk:"rows"`
+	// FQN is the fully qualified name output (branch_id/component_id/configuration_id)
+	FQN types.String `tfsdk:"fqn"`
 }
 
 // RowModel represents the schema for a configuration row.

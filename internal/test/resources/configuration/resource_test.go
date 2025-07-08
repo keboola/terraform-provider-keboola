@@ -21,6 +21,7 @@ import (
 func buildKeboolaConfigurationHCL(resourceID, componentID string, resourceDefinition map[string]any) string {
 	result := fmt.Sprintf(`resource "keboola_component_configuration" "%s" {
 		component_id = "%s"`, resourceID, componentID)
+
 	for attribute, value := range resourceDefinition {
 		var pair string
 		switch v := value.(type) {
@@ -31,6 +32,7 @@ func buildKeboolaConfigurationHCL(resourceID, componentID string, resourceDefini
 			rowsStr := "rows = ["
 			for i, row := range v {
 				rowsStr += "\n{"
+
 				for rowKey, rowVal := range row {
 					switch rv := rowVal.(type) {
 					case string:
@@ -39,18 +41,22 @@ func buildKeboolaConfigurationHCL(resourceID, componentID string, resourceDefini
 						rowsStr += fmt.Sprintf("\n\t%s = %v", rowKey, rv)
 					}
 				}
+
 				rowsStr += "\n}"
 				if i < len(v)-1 {
 					rowsStr += ","
 				}
 			}
+
 			rowsStr += "\n]"
 			pair = rowsStr
 		default:
 			pair = fmt.Sprintf("%s = %v ", attribute, v)
 		}
+
 		result = result + "\n" + pair
 	}
+
 	result = result + `
 	` + " }\n"
 
@@ -105,10 +111,12 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 		token := os.Getenv("TEST_KBC_TOKEN") //nolint: forbidigo
 
 		attributes := rs.Primary.Attributes
+
 		branchID, err := strconv.Atoi(attributes["branch_id"])
 		if err != nil {
 			return fmt.Errorf("Could not parse string %s to int: %w", attributes["branch_id"], err)
 		}
+
 		key := keboola.ConfigKey{
 			ID:          keboola.ConfigID(attributes["configuration_id"]),
 			BranchID:    keboola.BranchID(branchID),
@@ -141,18 +149,22 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 		if err != nil {
 			return err
 		}
+
 		err = checkAttribute("description", storedConfigWithRows.Description, attributes["description"])
 		if err != nil {
 			return err
 		}
+
 		err = checkAttribute("is_disabled", strconv.FormatBool(storedConfigWithRows.IsDisabled), attributes["is_disabled"])
 		if err != nil {
 			return err
 		}
+
 		err = checkAttribute("is_deleted", strconv.FormatBool(storedConfigWithRows.IsDeleted), attributes["is_deleted"])
 		if err != nil {
 			return err
 		}
+
 		err = checkAttribute("name", storedConfigWithRows.Name, attributes["name"])
 		if err != nil {
 			return err
@@ -161,10 +173,12 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 		actualContent := storedConfigWithRows.Content
 		expectedContent := orderedmap.New()
 		expectedContentStr := attributes["configuration"]
+
 		err = expectedContent.UnmarshalJSON([]byte(expectedContentStr))
 		if err != nil {
 			return test.NewConfigParseError(err)
 		}
+
 		actualBytes, err := actualContent.MarshalJSON()
 		if err != nil {
 			return fmt.Errorf("Could not marshal actual configuration to string. Error: %w", err)
@@ -184,20 +198,26 @@ func testAccCheckExampleConfigurationDataSet(resourceName, path, expectedValue s
 		if !ok {
 			return test.NewResourceNotFoundError(resourceName)
 		}
+
 		configStr := rs.Primary.Attributes["configuration"]
 		configMap := orderedmap.New()
+
 		err := configMap.UnmarshalJSON([]byte(configStr))
 		if err != nil {
 			return test.NewConfigParseError(err)
 		}
+
 		path := orderedmap.PathFromStr(path)
+
 		value, found, err := configMap.GetNestedPath(path)
 		if err != nil {
 			return fmt.Errorf("Get path failed: %w", err)
 		}
+
 		if !found {
 			return test.NewPathNotFoundError(path.String())
 		}
+
 		if value != expectedValue {
 			return test.NewPathValueMismatchError(path.String(), expectedValue, value)
 		}
