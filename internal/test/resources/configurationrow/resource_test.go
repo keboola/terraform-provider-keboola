@@ -12,16 +12,14 @@ import (
 	test "github.com/keboola/terraform-provider-keboola/internal/test"
 )
 
-const hclBlockEnd = `
-}
-`
+// buildHCLBlock is a generic helper to generate HCL for a resource block.
+// It takes the resource type, resource name, required attributes (as a string),
+// and a map of additional attributes.
+func buildHCLBlock(resourceType, resourceName, requiredAttrs string, attrs map[string]any) string {
+	result := fmt.Sprintf("resource \"%s\" \"%s\" {\n%s", resourceType, resourceName, requiredAttrs)
 
-// buildKeboolaConfigurationRowHCL is a helper function to generate HCL for keboola_configuration_row using FQN.
-func buildKeboolaConfigurationRowHCL(resourceID, fqn string, resourceDefinition map[string]any) string {
-	result := fmt.Sprintf(`resource "keboola_configuration_row" "%s" {
-  fqn = "%s"`, resourceID, fqn)
-
-	for attribute, value := range resourceDefinition {
+	// Iterate over attributes and add them to the result string.
+	for attribute, value := range attrs {
 		var pair string
 		switch v := value.(type) {
 		case string:
@@ -33,57 +31,37 @@ func buildKeboolaConfigurationRowHCL(resourceID, fqn string, resourceDefinition 
 		result += "\n" + pair
 	}
 
-	result += hclBlockEnd
+	// Add an extra newline after the closing brace to ensure valid HCL when concatenating multiple blocks.
+	result += "\n}\n"
 
 	return result
 }
 
-// buildKeboolaConfigurationRowHCLWithIDs is a helper function to generate HCL for keboola_configuration_row using explicit IDs.
-func buildKeboolaConfigurationRowHCLWithIDs(resourceID, branchID, componentID, configID string, resourceDefinition map[string]any) string {
-	result := fmt.Sprintf(`resource "keboola_configuration_row" "%s" {
-  branch_id = "%s"
-  component_id = "%s"
-  configuration_id = "%s"`, resourceID, branchID, componentID, configID)
+// buildKeboolaConfigurationRowHCL generates HCL for keboola_configuration_row using FQN.
+func buildKeboolaConfigurationRowHCL(resourceID, fqn string, attrs map[string]any) string {
+	required := fmt.Sprintf("  fqn = \"%s\"", fqn)
 
-	for attribute, value := range resourceDefinition {
-		var pair string
-		switch v := value.(type) {
-		case string:
-			pair = fmt.Sprintf("%s = %v ", attribute, strconv.Quote(v))
-		default:
-			pair = fmt.Sprintf("%s = %v ", attribute, v)
-		}
-
-		result += "\n" + pair
-	}
-
-	result += hclBlockEnd
-
-	return result
+	return buildHCLBlock("keboola_configuration_row", resourceID, required, attrs)
 }
 
-// buildKeboolaComponentConfigurationHCL is a helper function to generate HCL for keboola_component_configuration.
-func buildKeboolaComponentConfigurationHCL(resourceID, componentID string, resourceDefinition map[string]any) string {
-	result := fmt.Sprintf(`resource "keboola_component_configuration" "%s" {
-  component_id = "%s"`, resourceID, componentID)
+// buildKeboolaConfigurationRowHCLWithIDs generates HCL for keboola_configuration_row using explicit IDs.
+func buildKeboolaConfigurationRowHCLWithIDs(resourceID, branchID, componentID, configID string, attrs map[string]any) string {
+	required := fmt.Sprintf(
+		"  branch_id = \"%s\"\n  component_id = \"%s\"\n  configuration_id = \"%s\"",
+		branchID, componentID, configID,
+	)
 
-	for attribute, value := range resourceDefinition {
-		var pair string
-		switch v := value.(type) {
-		case string:
-			pair = fmt.Sprintf("%s = %v ", attribute, strconv.Quote(v))
-		default:
-			pair = fmt.Sprintf("%s = %v ", attribute, v)
-		}
-
-		result += "\n" + pair
-	}
-
-	result += hclBlockEnd
-
-	return result
+	return buildHCLBlock("keboola_configuration_row", resourceID, required, attrs)
 }
 
+// buildKeboolaComponentConfigurationHCL generates HCL for keboola_component_configuration.
+func buildKeboolaComponentConfigurationHCL(resourceID, componentID string, attrs map[string]any) string {
+	required := fmt.Sprintf("  component_id = \"%s\"", componentID)
+
+	return buildHCLBlock("keboola_component_configuration", resourceID, required, attrs)
+}
+
+// TestAccConfigurationRowResource_basic tests basic creation of a configuration row using FQN.
 func TestAccConfigurationRowResource_basic(t *testing.T) {
 	t.Parallel()
 
@@ -92,8 +70,8 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 		buildKeboolaComponentConfigurationHCL("ex_generic_test", "ex-generic-v2", map[string]any{
 			"name": "Test Config",
 			"configuration": `{
-					"parameters": {}
-				}`,
+						"parameters": {}
+					}`,
 		}) +
 		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.fqn}", map[string]any{
 			"name": "Test Row",
@@ -114,6 +92,7 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 	})
 }
 
+// TestAccConfigurationRowResource_CRUD tests create and update of a configuration row using explicit IDs.
 func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 	resourceName := "keboola_configuration_row.example_row"
 	configBase := map[string]any{
@@ -132,6 +111,7 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 		)
 
 	// Update only the description field in the configuration resource
+	// Updating both config and config row is not supported yet
 	configUpdate := test.ProviderConfig() +
 		buildKeboolaComponentConfigurationHCL("ex_mysql_test", "keboola.ex-db-mysql", map[string]any{
 			"name": "Test Config",
@@ -147,7 +127,6 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 			},
 		)
 
-	// nolint:godox // TODO: updating both config and config row is not supported yet
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
 		PreCheck:                 func() { test.AccPreCheck() },
@@ -175,6 +154,7 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 	})
 }
 
+// TestAccConfigurationRowResource_missingIdentifiers tests error handling when required identifiers are missing.
 func TestAccConfigurationRowResource_missingIdentifiers(t *testing.T) {
 	t.Parallel()
 
