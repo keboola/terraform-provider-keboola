@@ -246,26 +246,15 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 			return nil, err
 		}
 
-		// Log the parent context and row ID before creation
+		// Use GetConfigRowModelID for consistent logging of the row identifier
 		tflog.Info(ctx, "Creating configuration row", map[string]any{
-			"branch_id":        row.BranchID,
-			"component_id":     row.ComponentID,
-			"configuration_id": row.ConfigID,
-			"row_id":           row.ID,
+			"configuration_fqn": GetConfigRowModelID(&plan),
 		})
 
 		created, err := r.client.CreateConfigRowRequest(row).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("CreateConfigRowRequest failed: %w", err)
 		}
-
-		// Log the returned row ID after creation
-		tflog.Info(ctx, "Created configuration row", map[string]any{
-			"branch_id":        created.BranchID,
-			"component_id":     created.ComponentID,
-			"configuration_id": created.ConfigID,
-			"row_id":           created.ID,
-		})
 
 		return created, nil
 	})
@@ -285,26 +274,16 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 			return nil, errRowIDMissing
 		}
 
-		// Log the parent context and row ID before read
+		// Use GetConfigRowModelID for consistent logging of the row identifier
 		tflog.Info(ctx, "Reading configuration row", map[string]any{
-			"branch_id":        key.BranchID,
-			"component_id":     key.ComponentID,
-			"configuration_id": key.ConfigID,
-			"row_id":           key.ID,
+			"configuration_fqn": GetConfigRowModelID(&state),
+			"row_id":            key.ID,
 		})
 
 		row, err := r.client.GetConfigRowRequest(key).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("GetConfigRowRequest failed: %w", err)
 		}
-
-		// Log the returned row ID after read
-		tflog.Info(ctx, "Read configuration row", map[string]any{
-			"branch_id":        row.BranchID,
-			"component_id":     row.ComponentID,
-			"configuration_id": row.ConfigID,
-			"row_id":           row.ID,
-		})
 
 		return row, nil
 	})
@@ -318,26 +297,16 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 			return nil, fmt.Errorf("MapTerraformToAPI failed: %w", err)
 		}
 
-		// Log the parent context and row ID before update
+		// Use GetConfigRowModelID for consistent logging of the row identifier
 		tflog.Info(ctx, "Updating configuration row", map[string]any{
-			"branch_id":        row.BranchID,
-			"component_id":     row.ComponentID,
-			"configuration_id": row.ConfigID,
-			"row_id":           row.ID,
+			"configuration_fqn": GetConfigRowModelID(&plan),
+			"row_id":            row.ID,
 		})
 
 		updated, err := r.client.UpdateConfigRowRequest(row, []string{}).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("UpdateConfigRowRequest failed: %w", err)
 		}
-
-		// Log the returned row ID after update
-		tflog.Info(ctx, "Updated configuration row", map[string]any{
-			"branch_id":        updated.BranchID,
-			"component_id":     updated.ComponentID,
-			"configuration_id": updated.ConfigID,
-			"row_id":           updated.ID,
-		})
 
 		return updated, nil
 	})
@@ -356,6 +325,12 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 		} else {
 			return errRowIDMissing
 		}
+
+		// Use GetConfigRowModelID for consistent logging of the row identifier
+		tflog.Info(ctx, "Deleting configuration row", map[string]any{
+			"configuration_fqn": GetConfigRowModelID(&state),
+			"row_id":            key.ID,
+		})
 
 		_, err = r.client.DeleteConfigRowRequest(key).Send(ctx)
 		if err != nil {
