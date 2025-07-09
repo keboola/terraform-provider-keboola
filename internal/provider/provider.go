@@ -16,6 +16,7 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch/metadata"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configurationrow"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
@@ -93,8 +94,10 @@ func (p *keboolaProvider) Configure(
 
 	// Get the user-provided configuration
 	var config keboolaProviderModel
+
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
+
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -243,6 +246,10 @@ func (p *keboolaProvider) Resources(_ context.Context) []func() resource.Resourc
 		},
 		func() resource.Resource {
 			return metadata.NewResource()
+		},
+		// Register the configurationrow resource
+		func() resource.Resource {
+			return configurationrow.NewResource()
 		},
 	}
 }

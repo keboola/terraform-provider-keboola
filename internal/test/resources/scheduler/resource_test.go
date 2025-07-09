@@ -13,6 +13,7 @@ import (
 
 func testSchedulerResource(resourceID string, resourceDefinition map[string]any) string {
 	result := `resource "keboola_scheduler" "` + resourceID + `" {`
+
 	for attribute, value := range resourceDefinition {
 		var pair string
 		switch v := value.(type) {
@@ -21,8 +22,10 @@ func testSchedulerResource(resourceID string, resourceDefinition map[string]any)
 		default:
 			pair = fmt.Sprintf("%s = %v ", attribute, v)
 		}
+
 		result = result + "\n" + pair
 	}
+
 	result = result + "\n" + "}\n"
 
 	return result
@@ -40,8 +43,10 @@ func testConfigurationResource(resourceID string, resourceDefinition map[string]
 		default:
 			pair = fmt.Sprintf("%s = %v ", attribute, v)
 		}
+
 		result = result + "\n" + pair
 	}
+
 	result = result + "\n" + "}\n"
 
 	return result

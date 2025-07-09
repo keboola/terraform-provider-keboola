@@ -23,8 +23,10 @@ func (h *DefaultConfigRowHandler) ExtractChildModels(
 	ctx context.Context,
 	parent ConfigModel,
 ) ([]RowModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var rows []RowModel
+	var (
+		diags diag.Diagnostics
+		rows  []RowModel
+	)
 
 	if parent.Rows.IsNull() {
 		return rows, diags
@@ -106,6 +108,7 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 	// If parent already has rows defined, preserve their order
 	if !parent.Rows.IsNull() {
 		var existingRows []RowModel
+
 		diags = parent.Rows.ElementsAs(ctx, &existingRows, false)
 		if diags.HasError() {
 			return diags
@@ -136,6 +139,7 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 
 	// Create a new list of rowModels
 	rowType := parent.Rows.Type(ctx)
+
 	elemType, ok := rowType.(types.ListType)
 	if !ok {
 		diags.AddError(
@@ -148,6 +152,7 @@ func (h *DefaultConfigRowHandler) ProcessAPIChildModels(
 
 	updatedRows, rowDiags := types.ListValueFrom(ctx, elemType.ElemType, originalRows)
 	diags.Append(rowDiags...)
+
 	if !rowDiags.HasError() {
 		parent.Rows = updatedRows
 	}
@@ -207,6 +212,7 @@ func (h *DefaultConfigRowHandler) GetRowsSortOrder(rowModels, stateModels []RowM
 	}
 
 	var rowsSortOrder []string
+
 	for _, rowModel := range rowModels {
 		if !rowModel.ID.IsNull() && !rowModel.ID.IsUnknown() {
 			rowsSortOrder = append(rowsSortOrder, rowModel.ID.ValueString())

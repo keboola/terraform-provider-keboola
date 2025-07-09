@@ -132,6 +132,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 		// Attempt to activate/create the schedule
 		configID := keboola.ConfigID(plan.ConfigID.ValueString())
+
 		schedule, err := r.client.ActivateScheduleRequest(configID, configVersionID).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("could not create scheduler using ActivateScheduleRequest: %w", err)

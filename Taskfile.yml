@@ -33,7 +33,7 @@ tasks:
 
   testacc:
     cmds:
-      - TF_ACC=1 go test -count=1 -parallel=1 -timeout 10m -v ./...
+      - TF_ACC=1 go test -count=1 -parallel=1 -timeout 20m -v ./...
 
   testacc-encrypt:
     cmds:
@@ -146,6 +146,27 @@ tasks:
       - test-telemetry-destroy
       - test-telemetry-apply
       - test-telemetry-show-state
+
+  # Test configuration row resource example
+  test-config-row-plan:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" plan
+
+  test-config-row-apply:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" apply -auto-approve
+
+  test-config-row-destroy:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" apply -destroy -auto-approve
+
+  test-config-row-show-state:
+    deps: [install]
+    cmds:
+      - terraform -chdir="./examples/resources/keboola_component_configuration" state show keboola_configuration_row.example_row
 
   clean-examples-state:
     cmds:

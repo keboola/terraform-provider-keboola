@@ -2,6 +2,8 @@ package configuration
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -20,6 +22,8 @@ type ConfigModel struct {
 	IsDisabled        types.Bool   `tfsdk:"is_disabled"`
 	Content           types.String `tfsdk:"configuration"`
 	Rows              types.List   `tfsdk:"rows"`
+	// ConfigurationFQN is the fully qualified name output (branch_id/component_id/configuration_id)
+	ConfigurationFQN types.String `tfsdk:"configuration_fqn"`
 }
 
 // RowModel represents the schema for a configuration row.
@@ -33,11 +37,16 @@ type RowModel struct {
 	Content           types.String `tfsdk:"configuration_row"`
 }
 
-// GetConfigModelID returns the compound ID for a configuration.
+// GetConfigModelID returns the compound ID for a configuration, URL-encoding each segment.
+// This ensures that special characters (such as '/') in IDs do not break the FQN structure.
 func GetConfigModelID(model *ConfigModel) string {
-	return fmt.Sprintf("%d/%v/%v",
-		model.BranchID.ValueInt64(),
-		model.ComponentID.ValueString(),
-		model.ConfigID.ValueString(),
+	branchID := strconv.FormatInt(model.BranchID.ValueInt64(), 10)
+	componentID := model.ComponentID.ValueString()
+	configID := model.ConfigID.ValueString()
+
+	return fmt.Sprintf("%s/%s/%s",
+		url.QueryEscape(branchID),
+		url.QueryEscape(componentID),
+		url.QueryEscape(configID),
 	)
 }

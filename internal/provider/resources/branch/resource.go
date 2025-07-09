@@ -152,6 +152,7 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		if plan.Name.ValueString() != state.Name.ValueString() {
 			changedFields = append(changedFields, "name")
 		}
+
 		if plan.Description.ValueString() != state.Description.ValueString() {
 			changedFields = append(changedFields, "description")
 		}

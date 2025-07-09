@@ -1,4 +1,4 @@
-package common
+package jsonutils
 
 import (
 	"fmt"
@@ -14,6 +14,7 @@ func ParseJSON(jsonStr types.String) (*orderedmap.OrderedMap, error) {
 	}
 
 	contentMap := orderedmap.New()
+
 	err := contentMap.UnmarshalJSON([]byte(jsonStr.ValueString()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %w", err)
