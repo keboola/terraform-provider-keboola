@@ -23,23 +23,23 @@ func (m *Mapper) MapAPIToTerraform(_ context.Context, apiModel *keboola.ConfigRo
 	// Always set ID from API
 	tfModel.ID = types.StringValue(string(apiModel.ID))
 
-	// Determine what the user originally provided (FQN or IDs)
-	userProvidedFQN := !tfModel.FQN.IsNull() && tfModel.FQN.ValueString() != ""
+	// Determine what the user originally provided (configuration_fqn or IDs)
+	userProvidedConfigurationFQN := !tfModel.ConfigurationFQN.IsNull() && tfModel.ConfigurationFQN.ValueString() != ""
 
-	if userProvidedFQN {
-		// User provided FQN: set only FQN in state, null the 3 IDs
-		tfModel.FQN = types.StringValue(
+	if userProvidedConfigurationFQN {
+		// User provided configuration_fqn: set only configuration_fqn in state, null the 3 IDs
+		tfModel.ConfigurationFQN = types.StringValue(
 			apiModel.BranchID.String() + "/" + string(apiModel.ComponentID) + "/" + string(apiModel.ConfigID),
 		)
 		tfModel.BranchID = types.Int64Null()
 		tfModel.ComponentID = types.StringNull()
 		tfModel.ConfigID = types.StringNull()
 	} else {
-		// User provided 3 IDs: set only those, null FQN
+		// User provided 3 IDs: set only those, null configuration_fqn
 		tfModel.BranchID = types.Int64Value(int64(apiModel.BranchID))
 		tfModel.ComponentID = types.StringValue(string(apiModel.ComponentID))
 		tfModel.ConfigID = types.StringValue(string(apiModel.ConfigID))
-		tfModel.FQN = types.StringNull()
+		tfModel.ConfigurationFQN = types.StringNull()
 	}
 
 	// Set all other fields as usual
@@ -60,14 +60,14 @@ func (m *Mapper) MapAPIToTerraform(_ context.Context, apiModel *keboola.ConfigRo
 
 // MapTerraformToAPI converts a Terraform model to an API model.
 func (m *Mapper) MapTerraformToAPI(ctx context.Context, _, tfModel Model) (*keboola.ConfigRow, error) {
-	// Use getKeyFromModel to extract the parent key from the model (handles FQN or direct fields)
+	// Use getKeyFromModel to extract the parent key from the model (handles configuration_fqn or direct fields)
 	rowKey, err := getKeyFromModel(ctx, tfModel)
 	if err != nil {
 		return nil, err
 	}
 
-	// Only override if FQN is not provided
-	if tfModel.FQN.IsNull() || tfModel.FQN.ValueString() == "" {
+	// Only override if configuration_fqn is not provided
+	if tfModel.ConfigurationFQN.IsNull() || tfModel.ConfigurationFQN.ValueString() == "" {
 		if !tfModel.BranchID.IsNull() {
 			rowKey.BranchID = keboola.BranchID(tfModel.BranchID.ValueInt64())
 		}

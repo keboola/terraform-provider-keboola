@@ -37,9 +37,9 @@ func buildHCLBlock(resourceType, resourceName, requiredAttrs string, attrs map[s
 	return result
 }
 
-// buildKeboolaConfigurationRowHCL generates HCL for keboola_configuration_row using FQN.
-func buildKeboolaConfigurationRowHCL(resourceID, fqn string, attrs map[string]any) string {
-	required := fmt.Sprintf("  fqn = \"%s\"", fqn)
+// buildKeboolaConfigurationRowHCL generates HCL for keboola_configuration_row using configuration_fqn.
+func buildKeboolaConfigurationRowHCL(resourceID, configurationFQN string, attrs map[string]any) string {
+	required := fmt.Sprintf("  configuration_fqn = \"%s\"", configurationFQN)
 
 	return buildHCLBlock("keboola_configuration_row", resourceID, required, attrs)
 }
@@ -61,7 +61,7 @@ func buildKeboolaComponentConfigurationHCL(resourceID, componentID string, attrs
 	return buildHCLBlock("keboola_component_configuration", resourceID, required, attrs)
 }
 
-// TestAccConfigurationRowResource_basic tests basic creation of a configuration row using FQN.
+// TestAccConfigurationRowResource_basic tests basic creation of a configuration row using configuration_fqn.
 func TestAccConfigurationRowResource_basic(t *testing.T) {
 	t.Parallel()
 
@@ -73,7 +73,7 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 						"parameters": {}
 					}`,
 		}) +
-		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.fqn}", map[string]any{
+		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.configuration_fqn}", map[string]any{
 			"name": "Test Row",
 		})
 
@@ -85,7 +85,7 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 				Config: config,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					// The fqn will have the row ID appended by the API, so you may want to use a regex or prefix check here.
+					// The configuration_fqn will have the row ID appended by the API, so you may want to use a regex or prefix check here.
 				),
 			},
 		},

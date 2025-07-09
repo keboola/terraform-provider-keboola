@@ -142,7 +142,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"fqn": schema.StringAttribute{
+			"configuration_fqn": schema.StringAttribute{
 				Description: "Fully qualified name for the configuration, composed as branch_id/component_id/configuration_id.",
 				Computed:    true,
 			},

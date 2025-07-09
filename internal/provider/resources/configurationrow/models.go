@@ -11,7 +11,7 @@ type Model struct {
 	BranchID          types.Int64  `tfsdk:"branch_id"`
 	ComponentID       types.String `tfsdk:"component_id"`
 	ConfigID          types.String `tfsdk:"configuration_id"`
-	FQN               types.String `tfsdk:"fqn"`
+	ConfigurationFQN  types.String `tfsdk:"configuration_fqn"`
 	ID                types.String `tfsdk:"id"`
 	Name              types.String `tfsdk:"name"`
 	Description       types.String `tfsdk:"description"`

@@ -44,22 +44,22 @@ func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, res
 // Schema defines the Terraform schema for the resource.
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Manages a configuration row in Keboola. You must specify either 'fqn' or all of 'branch_id', " +
-			"'component_id', and 'configuration_id'. These options are mutually exclusive.",
-		MarkdownDescription: "Manages a configuration row in Keboola. You must specify either `fqn` or all of `branch_id`, " +
-			"`component_id`, and `configuration_id`. These options are mutually exclusive.",
+		Description: "Manages a configuration row in Keboola. You must specify either 'configuration_fqn' or " +
+			"all of 'branch_id', 'component_id', and 'configuration_id'.",
+		MarkdownDescription: "Manages a configuration row in Keboola. You must specify either `configuration_fqn` or " +
+			"all of `branch_id`, `component_id`, and `configuration_id`.",
 		Attributes: map[string]schema.Attribute{
 			"branch_id": schema.Int64Attribute{
-				Description:         "ID of the branch. Mutually exclusive with 'fqn'.",
-				MarkdownDescription: "ID of the branch. Mutually exclusive with `fqn`.",
+				Description:         "ID of the branch. Mutually exclusive with 'configuration_fqn'.",
+				MarkdownDescription: "ID of the branch. Mutually exclusive with `configuration_fqn`.",
 				Optional:            true,
 				Validators: []validator.Int64{
 					int64validator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("fqn"),
+						path.MatchRelative().AtParent().AtName("configuration_fqn"),
 					),
 					int64validator.ExactlyOneOf(
 						path.MatchRelative().AtParent().AtName("branch_id"),
-						path.MatchRelative().AtParent().AtName("fqn"),
+						path.MatchRelative().AtParent().AtName("configuration_fqn"),
 					),
 				},
 				// ForceNew: Changing branch_id requires recreation of the row resource.
@@ -68,12 +68,12 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				},
 			},
 			"component_id": schema.StringAttribute{
-				Description:         "ID of the component. Mutually exclusive with 'fqn'.",
-				MarkdownDescription: "ID of the component. Mutually exclusive with `fqn`.",
+				Description:         "ID of the component. Mutually exclusive with 'configuration_fqn'.",
+				MarkdownDescription: "ID of the component. Mutually exclusive with `configuration_fqn`.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("fqn"),
+						path.MatchRelative().AtParent().AtName("configuration_fqn"),
 					),
 				},
 				// ForceNew: Changing component_id requires recreation of the row resource.
@@ -82,12 +82,12 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				},
 			},
 			"configuration_id": schema.StringAttribute{
-				Description:         "ID of the configuration. Mutually exclusive with 'fqn'.",
-				MarkdownDescription: "ID of the configuration. Mutually exclusive with `fqn`.",
+				Description:         "ID of the configuration. Mutually exclusive with 'configuration_fqn'.",
+				MarkdownDescription: "ID of the configuration. Mutually exclusive with `configuration_fqn`.",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("fqn"),
+						path.MatchRelative().AtParent().AtName("configuration_fqn"),
 					),
 				},
 				// ForceNew: Changing configuration_id requires recreation of the row resource.
@@ -95,21 +95,10 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"fqn": schema.StringAttribute{
+			"configuration_fqn": schema.StringAttribute{
 				Description: "Fully qualified name for the configuration row. " +
 					"Required if not using branch_id/component_id/configuration_id.",
 				Optional: true,
-				Validators: []validator.String{
-					stringvalidator.ConflictsWith(
-						path.MatchRelative().AtParent().AtName("branch_id"),
-						path.MatchRelative().AtParent().AtName("component_id"),
-						path.MatchRelative().AtParent().AtName("configuration_id"),
-					),
-					stringvalidator.ExactlyOneOf(
-						path.MatchRelative().AtParent().AtName("fqn"),
-						path.MatchRelative().AtParent().AtName("branch_id"),
-					),
-				},
 			},
 			"id": schema.StringAttribute{
 				Description:         "Compound ID of the configuration row.",
@@ -175,31 +164,36 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 // Static error variables for consistent error handling.
 var (
-	errInvalidFQNFormat      = errors.New("invalid fqn format, expected branch_id/component_id/configuration_id")
-	errMissingIdentifiers    = errors.New("must provide either fqn or all of branch_id, component_id, configuration_id")
+	errInvalidConfigurationFQNFormat = errors.New(
+		"invalid configuration_fqn format, expected branch_id/component_id/configuration_id",
+	)
+	errMissingIdentifiers = errors.New(
+		"must provide either configuration_fqn or all of branch_id, component_id, configuration_id",
+	)
 	errInvalidBranchIDFormat = errors.New("invalid branch_id format, expected integer")
 	errRowIDMissing          = errors.New("row ID is missing in state")
 )
 
-const fqnPartsCount = 3 // for magic number check
+const configurationFQNPartsCount = 3 // for magic number check
 
-// getKeyFromModel returns a keboola.ConfigRowKey from the model, using fqn if set, otherwise the individual IDs.
+// getKeyFromModel returns a keboola.ConfigRowKey from the model.
+// It uses configuration_fqn if set, otherwise the individual IDs.
 func getKeyFromModel(ctx context.Context, m Model) (keboola.ConfigRowKey, error) {
-	if !m.FQN.IsNull() && m.FQN.ValueString() != "" {
-		fqn := m.FQN.ValueString()
+	if !m.ConfigurationFQN.IsNull() && m.ConfigurationFQN.ValueString() != "" {
+		configurationFQN := m.ConfigurationFQN.ValueString()
 
-		key, ok, err := parseFQN(fqn)
+		key, ok, err := parseConfigurationFQN(configurationFQN)
 		if err != nil {
-			return keboola.ConfigRowKey{}, fmt.Errorf("%w: %w", errInvalidFQNFormat, err)
+			return keboola.ConfigRowKey{}, fmt.Errorf("%w: %w", errInvalidConfigurationFQNFormat, err)
 		}
 
 		if ok {
-			tflog.Info(ctx, "Parsed FQN", map[string]any{"fqn": fqn, "key": key})
+			tflog.Info(ctx, "Parsed configuration_fqn", map[string]any{"configuration_fqn": configurationFQN, "key": key})
 
 			return key, nil
 		}
 
-		return keboola.ConfigRowKey{}, errInvalidFQNFormat
+		return keboola.ConfigRowKey{}, errInvalidConfigurationFQNFormat
 	}
 
 	if m.BranchID.IsNull() || m.ComponentID.IsNull() || m.ConfigID.IsNull() {
@@ -213,10 +207,10 @@ func getKeyFromModel(ctx context.Context, m Model) (keboola.ConfigRowKey, error)
 	}, nil
 }
 
-// parseFQN parses FQN with 3 parts (branch_id/component_id/config_id).
-func parseFQN(fqn string) (keboola.ConfigRowKey, bool, error) {
-	parts := strings.Split(fqn, "/")
-	if len(parts) != fqnPartsCount {
+// parseConfigurationFQN parses configuration_fqn with 3 parts (branch_id/component_id/config_id).
+func parseConfigurationFQN(configurationFQN string) (keboola.ConfigRowKey, bool, error) {
+	parts := strings.Split(configurationFQN, "/")
+	if len(parts) != configurationFQNPartsCount {
 		return keboola.ConfigRowKey{}, false, nil
 	}
 
