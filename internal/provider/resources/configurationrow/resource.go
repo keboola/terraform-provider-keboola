@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -99,6 +100,17 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Description: "Fully qualified name for the configuration row. " +
 					"Required if not using branch_id/component_id/configuration_id.",
 				Optional: true,
+				// Validator ensures the value matches the pattern: integer/component_id/configuration_id
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						// Pattern: branch_id/component_id/configuration_id
+						// - branch_id: one or more digits
+						// - component_id: one or more non-slash characters
+						// - configuration_id: one or more non-slash characters
+						regexp.MustCompile(`^\d+/[^/]+/[^/]+$`),
+						"configuration_fqn must be in the format 'branch_id/component_id/configuration_id', e.g. '123/ex-generic-v2/456'",
+					),
+				},
 			},
 			"id": schema.StringAttribute{
 				Description:         "Compound ID of the configuration row.",
