@@ -152,7 +152,7 @@ func (m *ConfigMapper) ValidateTerraformModel(
 		if !newModel.ID.IsUnknown() && oldModel.ID != newModel.ID {
 			diags.AddError(
 				"Error updating configuration",
-				"Cannot change configuration_id after configuration is created",
+				"Cannot change id after configuration is created",
 			)
 		}
 	}
