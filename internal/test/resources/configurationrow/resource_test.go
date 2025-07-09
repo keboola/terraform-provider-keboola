@@ -192,7 +192,7 @@ resource "keboola_configuration_row" "conflict_row" {
 		Steps: []resource.TestStep{
 			{
 				Config:      config,
-				ExpectError: regexp.MustCompile(`(?i)Conflicts with|mutually exclusive`),
+				ExpectError: regexp.MustCompile(`(?i)cannot be specified when`),
 			},
 		},
 	})
