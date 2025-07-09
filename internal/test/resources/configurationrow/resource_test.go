@@ -174,3 +174,26 @@ resource "keboola_configuration_row" "invalid_row" {
 		},
 	})
 }
+
+// TestAccConfigurationRowResource_conflictingIdentifiers tests error handling when both configuration_fqn and component_id are set.
+func TestAccConfigurationRowResource_conflictingIdentifiers(t *testing.T) {
+	t.Parallel()
+
+	config := test.ProviderConfig() + `
+resource "keboola_configuration_row" "conflict_row" {
+  configuration_fqn = "123/ex-generic-v2/456"
+  component_id = "ex-generic-v2"
+  name = "Should Fail Due To Conflict"
+}`
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: test.AccProtoV6ProviderFactories(),
+		PreCheck:                 func() { test.AccPreCheck() },
+		Steps: []resource.TestStep{
+			{
+				Config:      config,
+				ExpectError: regexp.MustCompile(`(?i)Conflicts with|mutually exclusive`),
+			},
+		},
+	})
+}
