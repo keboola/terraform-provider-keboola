@@ -53,7 +53,7 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	tfModel.Created = types.StringValue(apiModel.Config.Created.UTC().String())
 
 	// Set the fully qualified name (configuration_fqn) as branch_id/component_id/configuration_id
-	tfModel.ConfigurationFQN = types.StringValue(GetConfigurationFQN(tfModel))
+	tfModel.FQN = types.StringValue(GetConfigurationFQN(tfModel))
 
 	// Map configuration content
 	tfModel.Content = types.StringValue("{}")

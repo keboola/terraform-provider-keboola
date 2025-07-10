@@ -73,7 +73,7 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 						"parameters": {}
 					}`,
 		}) +
-		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.configuration_fqn}", map[string]any{
+		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.fqn}", map[string]any{
 			"name": "Test Row",
 		})
 
