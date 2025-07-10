@@ -316,16 +316,16 @@ func TestAccConfigResource(t *testing.T) {
 			// Change configuration id - expects error
 			{
 				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{
-					"name":             "test config",
-					"configuration_id": "aaa",
+					"name": "test config",
+					"id":   "aaa",
 				}),
-				ExpectError: regexp.MustCompile("Cannot change configuration_id after configuration is created"),
+				ExpectError: regexp.MustCompile("Cannot change id after configuration is created"),
 			},
 			// create configuration with id
 			{
 				Config: test.ProviderConfig() + exGenericResource("configwithid", map[string]any{
-					"name":             "test config with id",
-					"configuration_id": "mycustomconfiguid123",
+					"name": "test config with id",
+					"id":   "mycustomconfiguid123",
 					"configuration": `{
 						"a": 1,
 						"foo": "bar"
@@ -336,7 +336,6 @@ func TestAccConfigResource(t *testing.T) {
 					resource.TestMatchResourceAttr("keboola_component_configuration.configwithid", "id", regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)),
 					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "name", "test config with id"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "is_disabled", "false"),
-					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "configuration_id", "mycustomconfiguid123"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.configwithid"),
 				),
 			},
