@@ -1,3 +1,7 @@
+# This example demonstrates how to define a configuration row for a table in the SQL extractor.
+# - The parent configuration must exist and be referenced via configuration_fqn.
+# - Adjust parameters as needed for your use case. 
+
 # Example: Create a component configuration for an SQL extractor
 resource "keboola_component_configuration" "extractor_sql" {
   name         = "SQL Extractor Example"
@@ -28,7 +32,3 @@ resource "keboola_component_configuration_row" "extractor_sql_opportunity" {
     }
   })
 }
-
-# This example demonstrates how to define a configuration row for a table in the SQL extractor.
-# - The parent configuration must exist and be referenced via configuration_fqn.
-# - Adjust parameters as needed for your use case. 
