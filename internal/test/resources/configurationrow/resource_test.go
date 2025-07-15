@@ -37,21 +37,21 @@ func buildHCLBlock(resourceType, resourceName, requiredAttrs string, attrs map[s
 	return result
 }
 
-// buildKeboolaConfigurationRowHCL generates HCL for keboola_configuration_row using configuration_fqn.
+// buildKeboolaConfigurationRowHCL generates HCL for keboola_component_configuration_row using configuration_fqn.
 func buildKeboolaConfigurationRowHCL(resourceID, configurationFQN string, attrs map[string]any) string {
 	required := fmt.Sprintf("  configuration_fqn = \"%s\"", configurationFQN)
 
-	return buildHCLBlock("keboola_configuration_row", resourceID, required, attrs)
+	return buildHCLBlock("keboola_component_configuration_row", resourceID, required, attrs)
 }
 
-// buildKeboolaConfigurationRowHCLWithIDs generates HCL for keboola_configuration_row using explicit IDs.
+// buildKeboolaConfigurationRowHCLWithIDs generates HCL for keboola_component_configuration_row using explicit IDs.
 func buildKeboolaConfigurationRowHCLWithIDs(resourceID, branchID, componentID, configID string, attrs map[string]any) string {
 	required := fmt.Sprintf(
 		"  branch_id = \"%s\"\n  component_id = \"%s\"\n  configuration_id = \"%s\"",
 		branchID, componentID, configID,
 	)
 
-	return buildHCLBlock("keboola_configuration_row", resourceID, required, attrs)
+	return buildHCLBlock("keboola_component_configuration_row", resourceID, required, attrs)
 }
 
 // buildKeboolaComponentConfigurationHCL generates HCL for keboola_component_configuration.
@@ -65,7 +65,7 @@ func buildKeboolaComponentConfigurationHCL(resourceID, componentID string, attrs
 func TestAccConfigurationRowResource_basic(t *testing.T) {
 	t.Parallel()
 
-	resourceName := "keboola_configuration_row.example_row"
+	resourceName := "keboola_component_configuration_row.example_row"
 	config := test.ProviderConfig() +
 		buildKeboolaComponentConfigurationHCL("ex_generic_test", "ex-generic-v2", map[string]any{
 			"name": "Test Config",
@@ -73,7 +73,7 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 						"parameters": {}
 					}`,
 		}) +
-		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.configuration_fqn}", map[string]any{
+		buildKeboolaConfigurationRowHCL("example_row", "${keboola_component_configuration.ex_generic_test.fqn}", map[string]any{
 			"name": "Test Row",
 		})
 
@@ -94,7 +94,7 @@ func TestAccConfigurationRowResource_basic(t *testing.T) {
 
 // TestAccConfigurationRowResource_CRUD tests create and update of a configuration row using explicit IDs.
 func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
-	resourceName := "keboola_configuration_row.example_row"
+	resourceName := "keboola_component_configuration_row.example_row"
 	configBase := map[string]any{
 		"name": "Test Config",
 	}
@@ -104,7 +104,7 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 			"example_row",
 			"${keboola_component_configuration.ex_mysql_test.branch_id}",
 			"${keboola_component_configuration.ex_mysql_test.component_id}",
-			"${keboola_component_configuration.ex_mysql_test.configuration_id}",
+			"${keboola_component_configuration.ex_mysql_test.id}",
 			map[string]any{
 				"name": "Test Row",
 			},
@@ -120,7 +120,7 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 			"example_row",
 			"${keboola_component_configuration.ex_mysql_test.branch_id}",
 			"${keboola_component_configuration.ex_mysql_test.component_id}",
-			"${keboola_component_configuration.ex_mysql_test.configuration_id}",
+			"${keboola_component_configuration.ex_mysql_test.id}",
 			map[string]any{
 				"name":        "Test Row",
 				"description": "Updated",
@@ -137,7 +137,6 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "branch_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "component_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "configuration_id"),
 				),
 			},
 			{
@@ -146,7 +145,6 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "branch_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "component_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "configuration_id"),
 					// Add checks for updated attributes here
 				),
 			},
@@ -159,7 +157,7 @@ func TestAccConfigurationRowResource_missingIdentifiers(t *testing.T) {
 	t.Parallel()
 
 	config := test.ProviderConfig() + `
-resource "keboola_configuration_row" "invalid_row" {
+resource "keboola_component_configuration_row" "invalid_row" {
   name = "Should Fail"
 }`
 
@@ -180,7 +178,7 @@ func TestAccConfigurationRowResource_conflictingIdentifiers(t *testing.T) {
 	t.Parallel()
 
 	config := test.ProviderConfig() + `
-resource "keboola_configuration_row" "conflict_row" {
+resource "keboola_component_configuration_row" "conflict_row" {
   configuration_fqn = "123/ex-generic-v2/456"
   component_id = "ex-generic-v2"
   name = "Should Fail Due To Conflict"

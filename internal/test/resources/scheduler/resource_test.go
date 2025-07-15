@@ -91,11 +91,11 @@ func TestAccSchedulerResource(t *testing.T) {
 						"tasks": [
 							{
 								"id": "${random_string.test.result}-task",
-								"name": "ex-generic-v2-${keboola_component_configuration.telemetry_extractor.configuration_id}",
+								"name": "ex-generic-v2-${keboola_component_configuration.telemetry_extractor.id}",
 								"phase": "${random_string.test.result}-phase",
 								"task": {
 									"componentId": "ex-generic-v2",
-									"configurationId": "${keboola_component_configuration.telemetry_extractor.configuration_id}",
+									"configurationId": "${keboola_component_configuration.telemetry_extractor.id}",
 									"mode": "run"
 								},
 								"continueOnFailure": false,
@@ -115,18 +115,18 @@ func TestAccSchedulerResource(t *testing.T) {
 						},
 						"target": {
 							"componentId": "keboola.orchestrator",
-							"configurationId": "${keboola_component_configuration.test_config_orchestrator.configuration_id}",
+							"configurationId": "${keboola_component_configuration.test_config_orchestrator.id}",
 							"mode": "run"
 						}
 					}`,
 					// Then create the actual scheduler resource using the scheduler config
 				}) + testSchedulerResource("test", map[string]any{
-					"configuration_id": "${keboola_component_configuration.test_config_scheduler.configuration_id}",
+					"configuration_id": "${keboola_component_configuration.test_config_scheduler.id}",
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "id"),
 					resource.TestCheckResourceAttrSet("keboola_scheduler.test", "configuration_version"),
-					resource.TestCheckResourceAttrSet("keboola_component_configuration.test_config_scheduler", "configuration_id"),
+					resource.TestCheckResourceAttrSet("keboola_component_configuration.test_config_scheduler", "id"),
 				),
 			},
 			// Attempt to update the schedule by changing the underlying config's cronTab - should force replacement

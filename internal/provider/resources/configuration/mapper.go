@@ -42,7 +42,7 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	var diags diag.Diagnostics
 
 	// Map basic properties
-	tfModel.ConfigID = types.StringValue(apiModel.ID.String())
+	tfModel.ID = types.StringValue(apiModel.ID.String())
 	tfModel.BranchID = types.Int64Value(int64(apiModel.BranchID))
 	tfModel.ComponentID = types.StringValue(string(apiModel.ComponentID))
 	tfModel.Name = types.StringValue(apiModel.Name)
@@ -52,11 +52,8 @@ func (m *ConfigMapper) MapAPIToTerraform(
 	tfModel.IsDisabled = types.BoolValue(apiModel.IsDisabled)
 	tfModel.Created = types.StringValue(apiModel.Config.Created.UTC().String())
 
-	// Set the compound ID
-	tfModel.ID = types.StringValue(GetConfigModelID(tfModel))
-
 	// Set the fully qualified name (configuration_fqn) as branch_id/component_id/configuration_id
-	tfModel.ConfigurationFQN = types.StringValue(GetConfigModelID(tfModel))
+	tfModel.FQN = types.StringValue(GetConfigurationFQN(tfModel))
 
 	// Map configuration content
 	tfModel.Content = types.StringValue("{}")
@@ -84,12 +81,12 @@ func (m *ConfigMapper) MapTerraformToAPI(
 	key := keboola.ConfigKey{
 		BranchID:    keboola.BranchID(tfModel.BranchID.ValueInt64()),
 		ComponentID: keboola.ComponentID(tfModel.ComponentID.ValueString()),
-		ID:          keboola.ConfigID(tfModel.ConfigID.ValueString()),
+		ID:          keboola.ConfigID(tfModel.ID.ValueString()),
 	}
 
 	// Set optional fields if provided
-	if !tfModel.ConfigID.IsNull() && !tfModel.ConfigID.IsUnknown() {
-		key.ID = keboola.ConfigID(tfModel.ConfigID.ValueString())
+	if !tfModel.ID.IsNull() && !tfModel.ID.IsUnknown() {
+		key.ID = keboola.ConfigID(tfModel.ID.ValueString())
 	}
 
 	if !tfModel.BranchID.IsNull() && !tfModel.BranchID.IsUnknown() {
@@ -152,10 +149,10 @@ func (m *ConfigMapper) ValidateTerraformModel(
 			)
 		}
 
-		if !newModel.ConfigID.IsUnknown() && oldModel.ConfigID != newModel.ConfigID {
+		if !newModel.ID.IsUnknown() && oldModel.ID != newModel.ID {
 			diags.AddError(
 				"Error updating configuration",
-				"Cannot change configuration_id after configuration is created",
+				"Cannot change id after configuration is created",
 			)
 		}
 	}

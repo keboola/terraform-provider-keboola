@@ -76,7 +76,6 @@ func checkAllAttributesSet(resourceID string) resource.TestCheckFunc {
 
 	return resource.ComposeAggregateTestCheckFunc(
 		resource.TestCheckResourceAttrSet(fullResourceID, "id"),
-		resource.TestCheckResourceAttrSet(fullResourceID, "configuration_id"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "component_id"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "branch_id"),
 		resource.TestCheckResourceAttrSet(fullResourceID, "name"),
@@ -118,7 +117,7 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 		}
 
 		key := keboola.ConfigKey{
-			ID:          keboola.ConfigID(attributes["configuration_id"]),
+			ID:          keboola.ConfigID(attributes["id"]),
 			BranchID:    keboola.BranchID(branchID),
 			ComponentID: keboola.ComponentID(attributes["component_id"]),
 		}
@@ -247,7 +246,7 @@ func TestAccConfigResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("testempty"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.testempty", "name", "test empty config"),
-					resource.TestMatchResourceAttr("keboola_component_configuration.testempty", "id", regexp.MustCompile(`\d+/ex-generic-v2/\d+`)),
+					resource.TestMatchResourceAttr("keboola_component_configuration.testempty", "id", regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)),
 					resource.TestCheckResourceAttr("keboola_component_configuration.testempty", "is_disabled", "false"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.testempty"),
 				),
@@ -266,7 +265,7 @@ func TestAccConfigResource(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("test"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "false"),
-					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`\d+/ex-generic-v2/\d+`)),
+					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "description", "description"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.test"),
 				),
@@ -280,7 +279,7 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("test"),
-					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`\d+/ex-generic-v2/\d+`)),
+					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "true"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "description", ""),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "configuration", "{}"),
@@ -307,7 +306,7 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeTestCheckFunc(
 					checkAllAttributesSet("test"),
-					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`\d+/ex-generic-v2/\d+`)),
+					resource.TestMatchResourceAttr("keboola_component_configuration.test", "id", regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "is_disabled", "true"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test", "change_description", "update by Keboola terraform provider"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.test"),
@@ -317,16 +316,16 @@ func TestAccConfigResource(t *testing.T) {
 			// Change configuration id - expects error
 			{
 				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{
-					"name":             "test config",
-					"configuration_id": "aaa",
+					"name": "test config",
+					"id":   "aaa",
 				}),
-				ExpectError: regexp.MustCompile("Cannot change configuration_id after configuration is created"),
+				ExpectError: regexp.MustCompile("Cannot change id after configuration is created"),
 			},
 			// create configuration with id
 			{
 				Config: test.ProviderConfig() + exGenericResource("configwithid", map[string]any{
-					"name":             "test config with id",
-					"configuration_id": "mycustomconfiguid123",
+					"name": "test config with id",
+					"id":   "mycustomconfiguid123",
 					"configuration": `{
 						"a": 1,
 						"foo": "bar"
@@ -334,10 +333,9 @@ func TestAccConfigResource(t *testing.T) {
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("configwithid"),
-					resource.TestMatchResourceAttr("keboola_component_configuration.configwithid", "id", regexp.MustCompile(`\d+/ex-generic-v2/mycustomconfiguid123`)),
+					resource.TestMatchResourceAttr("keboola_component_configuration.configwithid", "id", regexp.MustCompile(`^[a-zA-Z0-9\-]+$`)),
 					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "name", "test config with id"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "is_disabled", "false"),
-					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "configuration_id", "mycustomconfiguid123"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.configwithid"),
 				),
 			},

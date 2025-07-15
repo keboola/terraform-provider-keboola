@@ -39,7 +39,7 @@ func NewResource() *Resource {
 
 // Metadata sets the resource type name.
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_configuration_row"
+	resp.TypeName = req.ProviderTypeName + "_component_configuration_row"
 }
 
 // Schema defines the Terraform schema for the resource.

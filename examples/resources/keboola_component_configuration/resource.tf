@@ -33,7 +33,7 @@ EOT
 }
 
 # Example: Create a configuration row using the new resource
-resource "keboola_configuration_row" "example_row" {
+resource "keboola_component_configuration_row" "example_row" {
   # You can use either the configuration_fqn or the branch_id/component_id/configuration_id triplet
   configuration_fqn = keboola_component_configuration.ex_generic_test.configuration_fqn
 

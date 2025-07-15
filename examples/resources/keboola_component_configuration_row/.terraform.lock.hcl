@@ -1,0 +1,24 @@
+# This file is maintained automatically by "terraform init".
+# Manual edits may be lost in future updates.
+
+provider "registry.terraform.io/keboola/keboola" {
+  version = "0.4.0"
+  hashes = [
+    "h1:uq9p7aI11PEPmBmrhxgaLWRF5FotkDvKUS8zW9IVqwY=",
+    "zh:292af8455870e0e33bb69dcb4e0a63235bfe908470fe971c79923f9948a99940",
+    "zh:31dda3026a396836d5f1e82a7512e9cb3eaaa2022142409c988e2842035f5648",
+    "zh:365082d7502ae211d8ab1b8293d3d411b0a9d7b1cba0423bbc8618e38322a8b3",
+    "zh:5395d76148fc03fd1195e75bb76a69f55f1ac833dd62dd1766ddc44942993936",
+    "zh:53e337f5ed04332dfd8a265b536a1a3d1d08c3d77059ad540774ca09ff40da33",
+    "zh:5d6839ca10b9b2e7fe0c8c96459065a2bec521204ae5480c6ec46b120158249a",
+    "zh:63db65b0a96eeaaaf128e63966f0532c14f66e52657a710fb8937b11af2c7334",
+    "zh:79700bbd11e988257834f304a505347a4af888050a6f4b07c347a34424ce5836",
+    "zh:80e62b2ffaa9f8fd3a1a6953026239ae98ed0f78e677f85a22a1b8adad36c9ed",
+    "zh:8bc8f61e496e96c81c46e1aa59bf2155b6acc80db1ea462f2ddd665748fcda7f",
+    "zh:95565c7f6b19c8eca832bc4e1d4e0eb49863dd85c1c74086fd7c27a77c73d4cc",
+    "zh:97278ad607be8646f9aadda0124b2b426d3af6391004fdfdd52bce82312a2d3d",
+    "zh:a573ef8c800a7859369c7793afd6f955adf1c26258cf287b618a5362039dc053",
+    "zh:df2fc7f1f52cfd8567833a7c69a22ec5136040dd38c37a93b3fa781f115e0c3b",
+    "zh:ff261f678485b51a50456aef71ea3dbdc2f004cab8fe180dfff02df3d9742ad1",
+  ]
+}
