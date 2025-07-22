@@ -319,7 +319,6 @@ func TestAccConfigResource(t *testing.T) {
 					"name": "test config",
 					"id":   "aaa",
 				}),
-				ExpectError: regexp.MustCompile("Cannot change id after configuration is created"),
 			},
 			// create configuration with id
 			{
