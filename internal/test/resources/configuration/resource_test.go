@@ -339,6 +339,34 @@ func TestAccConfigResource(t *testing.T) {
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.configwithid"),
 				),
 			},
+			// Test ForceNew: Changing configuration id should force recreation
+			{
+				Config: test.ProviderConfig() + exGenericResource("test_force_new_id", map[string]any{
+					"name": "test config force new id",
+					"id":   "force-new-id-1",
+					"configuration": `{
+						"foo": "bar"
+					}`,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkAllAttributesSet("test_force_new_id"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test_force_new_id", "id", "force-new-id-1"),
+				),
+			},
+			{
+				// Change the id, should force recreation (destroy old, create new)
+				Config: test.ProviderConfig() + exGenericResource("test_force_new_id", map[string]any{
+					"name": "test config force new id",
+					"id":   "force-new-id-2",
+					"configuration": `{
+						"foo": "bar"
+					}`,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkAllAttributesSet("test_force_new_id"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test_force_new_id", "id", "force-new-id-2"),
+				),
+			},
 		},
 	})
 }
