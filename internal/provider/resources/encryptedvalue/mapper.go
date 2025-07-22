@@ -1,4 +1,4 @@
-package encryption
+package encryptedvalue
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 // EncryptResponse is a simple wrapper around the map response from the API.
 type EncryptResponse map[string]string
 
-// Mapper implements ResourceMapper for encryption resources.
+// Mapper implements ResourceMapper for encrypted value resources.
 type Mapper struct {
 	client    *keboola.AuthorizedAPI
 	projectID int
@@ -37,8 +37,8 @@ func (m *Mapper) MapAPIToTerraform(
 	return diags
 }
 
-// MapTerraformToAPI converts a Terraform encryption model to a Keboola API model.
-// For encryption resource we are not able to reconstruct this object.
+// MapTerraformToAPI converts a Terraform encrypted value model to a Keboola API model.
+// For encrypted value resource we are not able to reconstruct this object.
 func (m *Mapper) MapTerraformToAPI(
 	_ context.Context,
 	_ Model,
@@ -47,21 +47,13 @@ func (m *Mapper) MapTerraformToAPI(
 	return nil, nil //nolint: nilnil
 }
 
-// ValidateTerraformModel validates a Terraform encryption model.
+// ValidateTerraformModel validates a Terraform encrypted value model.
 func (m *Mapper) ValidateTerraformModel(
 	_ context.Context,
 	oldModel *Model,
 	newModel *Model,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	// Component ID is required
-	if newModel.ComponentID.IsUnknown() || newModel.ComponentID.IsNull() {
-		diags.AddError(
-			"Error validating encryption resource",
-			"Component ID is required",
-		)
-	}
 
 	// Set defaults for ID if new
 	if oldModel == nil && newModel.ID.IsUnknown() {

@@ -20,7 +20,7 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/branch/metadata"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configuration"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/configurationrow"
-	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryption"
+	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/encryptedvalue"
 	"github.com/keboola/terraform-provider-keboola/internal/provider/resources/scheduler"
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
@@ -247,7 +247,7 @@ func (p *testKeboolaProvider) Resources(_ context.Context) []func() resource.Res
 			return configuration.NewResource()
 		},
 		func() resource.Resource {
-			return encryption.NewResource()
+			return encryptedvalue.NewResource()
 		},
 		func() resource.Resource {
 			return scheduler.NewResource()

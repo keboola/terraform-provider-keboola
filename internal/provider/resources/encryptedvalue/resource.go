@@ -1,4 +1,4 @@
-package encryption
+package encryptedvalue
 
 import (
 	"context"
@@ -16,10 +16,10 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
-// Sentinel errors for encryption resource.
+// Sentinel errors for encrypted value resource.
 var (
 	// ErrStateless indicates that no API call is needed for this operation as the resource is stateless.
-	ErrStateless = errors.New("encryption resource is stateless, no API call needed")
+	ErrStateless = errors.New("encrypted value resource is stateless, no API call needed")
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -32,9 +32,9 @@ var (
 	}
 )
 
-// Resource is the encryption resource implementation.
+// Resource is the encrypted value resource implementation.
 type Resource struct {
-	// Base functionality with encryption model specifics
+	// Base functionality with encrypted value model specifics
 	base abstraction.BaseResource[Model, *EncryptResponse]
 
 	// Direct access to the API client for specific operations
@@ -49,15 +49,15 @@ func NewResource() *Resource {
 
 // Metadata returns the resource type name.
 func (r *Resource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
-	resp.TypeName = req.ProviderTypeName + "_encryption"
+	resp.TypeName = req.ProviderTypeName + "_encrypted_value"
 }
 
 // Schema defines the schema for the resource.
 func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		// This description is used by the documentation generator and the language server
-		MarkdownDescription: "Encryption resource",
-		Description:         "Encryption resource for securely storing sensitive data in Keboola",
+		MarkdownDescription: "Encrypted value resource",
+		Description:         "Encrypted value resource for securely storing sensitive data in Keboola",
 		DeprecationMessage:  "",
 		Version:             1,
 		Blocks:              map[string]schema.Block{},
@@ -65,7 +65,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Encryption identifier",
+				MarkdownDescription: "Encrypted value identifier",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -73,7 +73,17 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"component_id": schema.StringAttribute{
 				MarkdownDescription: "Id of the component where the encrypted value will be used.",
 				Description:         "Id of the component where the encrypted value will be used.",
-				Required:            true,
+				Optional:            true,
+			},
+			"config_id": schema.StringAttribute{
+				MarkdownDescription: "Id of the configuration where the encrypted value will be used.",
+				Description:         "Id of the configuration where the encrypted value will be used.",
+				Optional:            true,
+			},
+			"branch_type": schema.StringAttribute{
+				MarkdownDescription: "Type of the branch where the encrypted value will be used (e.g., 'default', 'dev').",
+				Description:         "Type of the branch where the encrypted value will be used (e.g., 'default', 'dev').",
+				Optional:            true,
 			},
 			"value": schema.StringAttribute{
 				MarkdownDescription: "Value to be encrypted.",
@@ -113,7 +123,7 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 // Create creates the resource and sets the initial Terraform state.
 func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Info(ctx, "Creating encryption resource")
+	tflog.Info(ctx, "Creating encrypted value resource")
 
 	// Use the base resource abstraction for Create
 	r.base.ExecuteCreate(ctx, req, resp, func(ctx context.Context, model Model) (*EncryptResponse, error) {
@@ -122,10 +132,31 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 			"#value": model.Value.ValueString(),
 		}
 
+		// Prepare optional parameters
+		var componentID *keboola.ComponentID
+		if v := model.ComponentID.ValueString(); v != "" {
+			cid := keboola.ComponentID(v)
+			componentID = &cid
+		}
+
+		var configID *keboola.ConfigID
+		if v := model.ConfigID.ValueString(); v != "" {
+			cfgid := keboola.ConfigID(v)
+			configID = &cfgid
+		}
+
+		var branchType *keboola.BranchType
+		if v := model.BranchType.ValueString(); v != "" {
+			bt := keboola.BranchType(v)
+			branchType = &bt
+		}
+
 		// Call the API to encrypt the value
 		result, err := r.client.EncryptRequest(
 			r.projectID,
-			keboola.ComponentID(model.ComponentID.ValueString()),
+			componentID,
+			configID,
+			branchType,
 			requestBody,
 		).Send(ctx)
 		if err != nil {
@@ -140,11 +171,11 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 
 // Read refreshes the Terraform state with the latest data.
 func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Info(ctx, "Reading encryption resource")
+	tflog.Info(ctx, "Reading encrypted value resource")
 
 	// Use the base resource abstraction for Read
 	r.base.ExecuteRead(ctx, req, resp, func(_ context.Context, _ Model) (*EncryptResponse, error) {
-		// Nothing to do for encryption resources as they're stateless
+		// Nothing to do for encrypted value resources as they're stateless
 		// Return sentinel error to indicate no API call is needed
 		return nil, ErrStateless
 	})
@@ -152,7 +183,7 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 // Update updates the resource and sets the updated Terraform state.
 func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	tflog.Info(ctx, "Updating encryption resource")
+	tflog.Info(ctx, "Updating encrypted value resource")
 
 	// Use the base resource abstraction for Update
 	r.base.ExecuteUpdate(ctx, req, resp, func(ctx context.Context, state, plan Model) (*EncryptResponse, error) {
@@ -161,12 +192,31 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 			tflog.Info(ctx, "Value is empty, keeping previous encrypted value")
 
 			// Return a proper response with the existing encrypted value
-			// For encryption resources, we're only concerned about the #value field
+			// For encrypted value resources, we're only concerned about the #value field
 			response := EncryptResponse{
 				"#value": state.EncryptedValue.ValueString(),
 			}
 
 			return &response, nil
+		}
+
+		// Prepare optional parameters
+		var componentID *keboola.ComponentID
+		if v := plan.ComponentID.ValueString(); v != "" {
+			cid := keboola.ComponentID(v)
+			componentID = &cid
+		}
+
+		var configID *keboola.ConfigID
+		if v := plan.ConfigID.ValueString(); v != "" {
+			cfgid := keboola.ConfigID(v)
+			configID = &cfgid
+		}
+
+		var branchType *keboola.BranchType
+		if v := plan.BranchType.ValueString(); v != "" {
+			bt := keboola.BranchType(v)
+			branchType = &bt
 		}
 
 		// Create request body
@@ -177,7 +227,9 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 		// Call the API to encrypt the value
 		result, err := r.client.EncryptRequest(
 			r.projectID,
-			keboola.ComponentID(plan.ComponentID.ValueString()),
+			componentID,
+			configID,
+			branchType,
 			requestBody,
 		).Send(ctx)
 		if err != nil {
@@ -193,11 +245,11 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 
 // Delete deletes the resource and removes the Terraform state.
 func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Info(ctx, "Deleting encryption resource")
+	tflog.Info(ctx, "Deleting encrypted value resource")
 
 	// Use the generic base resource implementation
 	r.base.ExecuteDelete(ctx, req, resp, func(_ context.Context, _ Model) error {
-		// Nothing to do for encryption resources - they're virtual
+		// Nothing to do for encrypted value resources - they're virtual
 		return ErrStateless
 	})
 }
