@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,7 +44,7 @@ func (m *ConfigMapper) MapAPIToTerraform(
 
 	// Map basic properties
 	tfModel.ID = types.StringValue(apiModel.ID.String())
-	tfModel.BranchID = types.Int64Value(int64(apiModel.BranchID))
+	tfModel.BranchID = types.StringValue(fmt.Sprintf("%d", apiModel.BranchID))
 	tfModel.ComponentID = types.StringValue(string(apiModel.ComponentID))
 	tfModel.Name = types.StringValue(apiModel.Name)
 	tfModel.Description = types.StringValue(apiModel.Description)
@@ -77,9 +78,15 @@ func (m *ConfigMapper) MapTerraformToAPI(
 	stateModel ConfigModel,
 	tfModel ConfigModel,
 ) (*keboola.ConfigWithRows, error) {
+	// Parse branch ID from string to int
+	branchID, err := strconv.ParseInt(tfModel.BranchID.ValueString(), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid branch_id: %w", err)
+	}
+
 	// Create API key structure
 	key := keboola.ConfigKey{
-		BranchID:    keboola.BranchID(tfModel.BranchID.ValueInt64()),
+		BranchID:    keboola.BranchID(branchID),
 		ComponentID: keboola.ComponentID(tfModel.ComponentID.ValueString()),
 		ID:          keboola.ConfigID(tfModel.ID.ValueString()),
 	}
@@ -90,7 +97,12 @@ func (m *ConfigMapper) MapTerraformToAPI(
 	}
 
 	if !tfModel.BranchID.IsNull() && !tfModel.BranchID.IsUnknown() {
-		key.BranchID = keboola.BranchID(tfModel.BranchID.ValueInt64())
+		branchID, err := strconv.ParseInt(tfModel.BranchID.ValueString(), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid branch_id: %w", err)
+		}
+
+		key.BranchID = keboola.BranchID(branchID)
 	}
 
 	// Parse configuration content

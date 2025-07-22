@@ -68,7 +68,7 @@ resource "keboola_component_configuration_row" "example_row" {
 
 ### Optional
 
-- `branch_id` (Number) ID of the branch. If not specified, then default branch will be used.
+- `branch_id` (String) ID of the branch. If not specified, then default branch will be used.
 - `change_description` (String) Change description associated with the configuration change.
 - `configuration` (String) Content of the configuration specified as JSON string.
 - `description` (String) Description of the configuration.

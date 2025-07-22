@@ -37,12 +37,12 @@ func (m *Mapper) MapAPIToTerraform(_ context.Context, apiModel *keboola.ConfigRo
 			url.QueryEscape(string(apiModel.ComponentID)) + "/" +
 			url.QueryEscape(string(apiModel.ConfigID))
 		tfModel.ConfigurationFQN = types.StringValue(encodedFQN)
-		tfModel.BranchID = types.Int64Null()
+		tfModel.BranchID = types.StringNull()
 		tfModel.ComponentID = types.StringNull()
 		tfModel.ConfigID = types.StringNull()
 	} else {
 		// User provided 3 IDs: set only those, null configuration_fqn
-		tfModel.BranchID = types.Int64Value(int64(apiModel.BranchID))
+		tfModel.BranchID = types.StringValue(fmt.Sprintf("%d", apiModel.BranchID))
 		tfModel.ComponentID = types.StringValue(string(apiModel.ComponentID))
 		tfModel.ConfigID = types.StringValue(string(apiModel.ConfigID))
 		tfModel.ConfigurationFQN = types.StringNull()
@@ -73,9 +73,14 @@ func (m *Mapper) MapTerraformToAPI(ctx context.Context, _, tfModel Model) (*kebo
 	}
 
 	// Only override if configuration_fqn is not provided
-	if tfModel.ConfigurationFQN.IsNull() || tfModel.ConfigurationFQN.ValueString() == "" {
+	if tfModel.ConfigurationFQN.IsNull() || tfModel.ConfigurationFQN.ValueString() == "" { //nolint:nestif
 		if !tfModel.BranchID.IsNull() {
-			rowKey.BranchID = keboola.BranchID(tfModel.BranchID.ValueInt64())
+			branchID, err := strconv.ParseInt(tfModel.BranchID.ValueString(), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid branch_id: %w", err)
+			}
+
+			rowKey.BranchID = keboola.BranchID(branchID)
 		}
 
 		if !tfModel.ComponentID.IsNull() {
@@ -132,8 +137,13 @@ func getKeyFromModelWithDecode(_ context.Context, m Model) (keboola.ConfigRowKey
 		return keboola.ConfigRowKey{}, errMissingIdentifiers
 	}
 
+	branchID, err := strconv.ParseInt(m.BranchID.ValueString(), 10, 64)
+	if err != nil {
+		return keboola.ConfigRowKey{}, fmt.Errorf("invalid branch_id: %w", err)
+	}
+
 	return keboola.ConfigRowKey{
-		BranchID:    keboola.BranchID(m.BranchID.ValueInt64()),
+		BranchID:    keboola.BranchID(branchID),
 		ComponentID: keboola.ComponentID(m.ComponentID.ValueString()),
 		ConfigID:    keboola.ConfigID(m.ConfigID.ValueString()),
 	}, nil

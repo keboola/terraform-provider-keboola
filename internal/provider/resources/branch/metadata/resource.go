@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -55,7 +56,7 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				MarkdownDescription: "Metadata ID",
 				Computed:            true,
 			},
-			"branch_id": schema.Int64Attribute{
+			"branch_id": schema.StringAttribute{
 				MarkdownDescription: "Branch ID",
 				Required:            true,
 			},
@@ -108,11 +109,16 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	// Use the base resource abstraction for Read
 	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state Model) (*keboola.MetadataDetail, error) {
 		// Get metadata with matching ID
-		branch, err := r.client.ListBranchMetadataRequest(
-			keboola.BranchKey{
-				ID: keboola.BranchID(state.BranchID.ValueInt64()),
-			},
-		).Send(ctx)
+		branchID, err := strconv.ParseInt(state.BranchID.ValueString(), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid branch_id: %w", err)
+		}
+
+		branchKey := keboola.BranchKey{
+			ID: keboola.BranchID(branchID),
+		}
+
+		branch, err := r.client.ListBranchMetadataRequest(branchKey).Send(ctx)
 		if err != nil {
 			return nil, fmt.Errorf("could not get branch metadata: %w", err)
 		}
@@ -144,12 +150,17 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	// Use the generic base resource implementation
 	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state Model) error {
 		// Create key from model
-		key := keboola.BranchKey{
-			ID: keboola.BranchID(state.BranchID.ValueInt64()),
+		branchID, err := strconv.ParseInt(state.BranchID.ValueString(), 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid branch_id: %w", err)
+		}
+
+		branchKey := keboola.BranchKey{
+			ID: keboola.BranchID(branchID),
 		}
 
 		// Delete the branch
-		err := r.client.DeleteBranchMetadataRequest(key, state.ID.ValueString()).SendOrErr(ctx)
+		err = r.client.DeleteBranchMetadataRequest(branchKey, state.ID.ValueString()).SendOrErr(ctx)
 		if err != nil {
 			return fmt.Errorf("could not delete branch metadata: %w", err)
 		}
@@ -163,11 +174,16 @@ func (r *Resource) updateMetadata(ctx context.Context, model Model) (*keboola.Me
 	metadata[model.Key.ValueString()] = model.Value.ValueString()
 
 	// Call the API to create the branch
-	branchKey := keboola.BranchKey{
-		ID: keboola.BranchID(int(model.BranchID.ValueInt64())),
+	branchID, err := strconv.ParseInt(model.BranchID.ValueString(), 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("invalid branch_id: %w", err)
 	}
 
-	_, err := r.client.AppendBranchMetadataRequest(
+	branchKey := keboola.BranchKey{
+		ID: keboola.BranchID(branchID),
+	}
+
+	_, err = r.client.AppendBranchMetadataRequest(
 		branchKey,
 		metadata,
 	).Send(ctx)
