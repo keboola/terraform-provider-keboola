@@ -399,11 +399,17 @@ func (m forceNewIfIDChangesModifier) PlanModifyString(
 	req planmodifier.StringRequest,
 	resp *planmodifier.StringResponse,
 ) {
-	if req.StateValue.IsNull() || req.StateValue.IsUnknown() || req.PlanValue.IsNull() || req.PlanValue.IsUnknown() {
+	if isStateOrPlanValueInvalid(req) {
 		return
 	}
 
 	if req.StateValue.ValueString() != req.PlanValue.ValueString() {
 		resp.RequiresReplace = true
 	}
+}
+
+// isStateOrPlanValueInvalid checks if either the state or plan value is null or unknown.
+// This helps to keep PlanModifyString logic clean and readable.
+func isStateOrPlanValueInvalid(req planmodifier.StringRequest) bool {
+	return req.StateValue.IsNull() || req.StateValue.IsUnknown() || req.PlanValue.IsNull() || req.PlanValue.IsUnknown()
 }

@@ -339,7 +339,6 @@ func TestAccConfigResource(t *testing.T) {
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.configwithid"),
 				),
 			},
-			// Test ForceNew: Changing configuration id should force recreation
 			{
 				Config: test.ProviderConfig() + exGenericResource("test_force_new_id", map[string]any{
 					"name": "test config force new id",
