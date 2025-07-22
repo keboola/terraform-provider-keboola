@@ -14,8 +14,8 @@ Interact with Keboola Storage API (https://keboola.docs.apiary.io/).
 
 ```terraform
 provider "keboola" {
-  host  = "https://connection.."
-  token = "xxx"
+  hostname_suffix = "keboola.com"
+  token           = "xxx"
 }
 ```
 
@@ -24,5 +24,5 @@ provider "keboola" {
 
 ### Optional
 
-- `host` (String) URL of the Keboola Connection API. Can be also provided via KBC_HOST environment variable.
+- `hostname_suffix` (String) Hostname suffix for the Keboola Stack (e.g., 'keboola.com'). The provider will automatically prepend 'connection.' to construct the full URL. Can be also provided via KBC_HOSTNAME_SUFFIX environment variable.
 - `token` (String, Sensitive) API Token used to authenticate against the API. Can be also provided via KBC_TOKEN environment variable.

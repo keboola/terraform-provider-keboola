@@ -1,4 +1,4 @@
 provider "keboola" {
-  host  = "https://connection.."
-  token = "xxx"
+  hostname_suffix = "keboola.com"
+  token           = "xxx"
 }
