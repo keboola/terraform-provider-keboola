@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -177,6 +178,20 @@ func (p *keboolaProvider) Configure(
 	}
 
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate the hostname suffix to ensure it does not already contain a protocol or subdomain
+	if strings.HasPrefix(hostnameSuffix, "http://") ||
+		strings.HasPrefix(hostnameSuffix, "https://") ||
+		strings.HasPrefix(hostnameSuffix, "connection.") {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("hostname_suffix"),
+			"Invalid Keboola API Hostname Suffix",
+			"The hostname_suffix value must not include a protocol (http:// or https://) or start with 'connection.'. "+
+				"Please provide a valid hostname suffix.",
+		)
+
 		return
 	}
 
