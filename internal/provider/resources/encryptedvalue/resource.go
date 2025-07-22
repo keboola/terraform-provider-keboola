@@ -170,15 +170,12 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 }
 
 // Read refreshes the Terraform state with the latest data.
-func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+func (r *Resource) Read(ctx context.Context, _ resource.ReadRequest, _ *resource.ReadResponse) {
 	tflog.Info(ctx, "Reading encrypted value resource")
 
-	// Use the base resource abstraction for Read
-	r.base.ExecuteRead(ctx, req, resp, func(_ context.Context, _ Model) (*EncryptResponse, error) {
-		// Nothing to do for encrypted value resources as they're stateless
-		// Return sentinel error to indicate no API call is needed
-		return nil, ErrStateless
-	})
+	// For stateless resources, no API call is needed and no error should be returned.
+	// The state is left as-is. This is a no-op.
+	// Do not return an error, otherwise Terraform will treat the resource as broken.
 }
 
 // Update updates the resource and sets the updated Terraform state.
@@ -244,12 +241,10 @@ func (r *Resource) Update(ctx context.Context, req resource.UpdateRequest, resp 
 }
 
 // Delete deletes the resource and removes the Terraform state.
-func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+func (r *Resource) Delete(ctx context.Context, _ resource.DeleteRequest, _ *resource.DeleteResponse) {
 	tflog.Info(ctx, "Deleting encrypted value resource")
 
-	// Use the generic base resource implementation
-	r.base.ExecuteDelete(ctx, req, resp, func(_ context.Context, _ Model) error {
-		// Nothing to do for encrypted value resources - they're virtual
-		return ErrStateless
-	})
+	// For stateless resources, no API call is needed and no error should be returned.
+	// This is a no-op. Terraform will remove the state automatically.
+	// Do not return an error, otherwise Terraform will treat the resource as broken.
 }
