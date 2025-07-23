@@ -78,6 +78,8 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					// Custom plan modifier to force resource replacement if id changes.
+					forceNewIfIDChangesModifier{},
 				},
 			},
 			"component_id": schema.StringAttribute{
@@ -378,4 +380,36 @@ func (r *Resource) UpgradeState(ctx context.Context) map[int64]resource.StateUpg
 			},
 		},
 	}
+}
+
+// forceNewIfIDChangesModifier is a custom plan modifier that forces resource replacement if the id changes.
+// Note: 'ID' is capitalized as per Go initialism conventions.
+type forceNewIfIDChangesModifier struct{}
+
+func (m forceNewIfIDChangesModifier) Description(_ context.Context) string {
+	return "Forces resource replacement if the id changes."
+}
+
+func (m forceNewIfIDChangesModifier) MarkdownDescription(_ context.Context) string {
+	return "Forces resource replacement if the id changes."
+}
+
+func (m forceNewIfIDChangesModifier) PlanModifyString(
+	_ context.Context,
+	req planmodifier.StringRequest,
+	resp *planmodifier.StringResponse,
+) {
+	if isStateOrPlanValueInvalid(req) {
+		return
+	}
+
+	if req.StateValue.ValueString() != req.PlanValue.ValueString() {
+		resp.RequiresReplace = true
+	}
+}
+
+// isStateOrPlanValueInvalid checks if either the state or plan value is null or unknown.
+// This helps to keep PlanModifyString logic clean and readable.
+func isStateOrPlanValueInvalid(req planmodifier.StringRequest) bool {
+	return req.StateValue.IsNull() || req.StateValue.IsUnknown() || req.PlanValue.IsNull() || req.PlanValue.IsUnknown()
 }

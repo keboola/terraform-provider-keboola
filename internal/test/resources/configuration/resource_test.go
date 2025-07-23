@@ -319,7 +319,6 @@ func TestAccConfigResource(t *testing.T) {
 					"name": "test config",
 					"id":   "aaa",
 				}),
-				ExpectError: regexp.MustCompile("Cannot change id after configuration is created"),
 			},
 			// create configuration with id
 			{
@@ -337,6 +336,33 @@ func TestAccConfigResource(t *testing.T) {
 					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "name", "test config with id"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.configwithid", "is_disabled", "false"),
 					testAccCheckExampleConfigMatchesReality(t, "keboola_component_configuration.configwithid"),
+				),
+			},
+			{
+				Config: test.ProviderConfig() + exGenericResource("test_force_new_id", map[string]any{
+					"name": "test config force new id",
+					"id":   "force-new-id-1",
+					"configuration": `{
+						"foo": "bar"
+					}`,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkAllAttributesSet("test_force_new_id"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test_force_new_id", "id", "force-new-id-1"),
+				),
+			},
+			{
+				// Change the id, should force recreation (destroy old, create new)
+				Config: test.ProviderConfig() + exGenericResource("test_force_new_id", map[string]any{
+					"name": "test config force new id",
+					"id":   "force-new-id-2",
+					"configuration": `{
+						"foo": "bar"
+					}`,
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkAllAttributesSet("test_force_new_id"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test_force_new_id", "id", "force-new-id-2"),
 				),
 			},
 		},
