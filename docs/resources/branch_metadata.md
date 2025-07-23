@@ -17,7 +17,7 @@ Branch resource
 
 ### Required
 
-- `branch_id` (Number) Branch ID
+- `branch_id` (String) Branch ID
 - `key` (String) Metadata key
 - `value` (String) Metadata value
 

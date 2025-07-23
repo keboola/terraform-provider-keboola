@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -82,19 +82,19 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 					forceNewIfIDChangesModifier{},
 				},
 			},
-			"component_id": schema.StringAttribute{
-				Description:         "ID of the component.",
-				MarkdownDescription: "ID of the component.",
-				Required:            true,
-			},
-			"branch_id": schema.Int64Attribute{
+			"branch_id": schema.StringAttribute{
 				Description:         "ID of the branch. If not specified, then default branch will be used.",
 				MarkdownDescription: "ID of the branch. If not specified, then default branch will be used.",
 				Optional:            true,
 				Computed:            true,
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
 				},
+			},
+			"component_id": schema.StringAttribute{
+				Description:         "ID of the component.",
+				MarkdownDescription: "ID of the component.",
+				Required:            true,
 			},
 			"name": schema.StringAttribute{
 				Description: "Name of the configuration.",
@@ -236,7 +236,7 @@ func (r *Resource) Create(ctx context.Context, req resource.CreateRequest, resp 
 				return nil, fmt.Errorf("could not get default branch: %w", err)
 			}
 
-			plan.BranchID = types.Int64Value(int64(branch.ID))
+			plan.BranchID = types.StringValue(fmt.Sprintf("%d", branch.ID))
 		}
 
 		// Execute the create operation using the mapper
@@ -262,9 +262,14 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 	// Use the base resource abstraction for Read
 	r.base.ExecuteRead(ctx, req, resp, func(ctx context.Context, state ConfigModel) (*keboola.ConfigWithRows, error) {
 		// Create key from model
+		branchID, err := strconv.ParseInt(state.BranchID.ValueString(), 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid branch_id: %w", err)
+		}
+
 		key := keboola.ConfigKey{
 			ID:          keboola.ConfigID(state.ID.ValueString()),
-			BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+			BranchID:    keboola.BranchID(branchID),
 			ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
 		}
 
@@ -342,14 +347,19 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	// Use the base resource abstraction for Delete
 	r.base.ExecuteDelete(ctx, req, resp, func(ctx context.Context, state ConfigModel) error {
 		// Create key from model
+		branchID, err := strconv.ParseInt(state.BranchID.ValueString(), 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid branch_id: %w", err)
+		}
+
 		key := keboola.ConfigKey{
 			ID:          keboola.ConfigID(state.ID.ValueString()),
-			BranchID:    keboola.BranchID(state.BranchID.ValueInt64()),
+			BranchID:    keboola.BranchID(branchID),
 			ComponentID: keboola.ComponentID(state.ComponentID.ValueString()),
 		}
 
 		// Delete the configuration
-		err := r.client.DeleteConfigRequest(key).SendOrErr(ctx)
+		err = r.client.DeleteConfigRequest(key).SendOrErr(ctx)
 		if err != nil {
 			return fmt.Errorf("could not delete configuration: %w", err)
 		}

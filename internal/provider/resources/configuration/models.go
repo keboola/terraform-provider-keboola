@@ -3,7 +3,6 @@ package configuration
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -11,7 +10,7 @@ import (
 // Config represents the Terraform schema for a configuration.
 type ConfigModel struct {
 	ID                types.String `tfsdk:"id"`
-	BranchID          types.Int64  `tfsdk:"branch_id"`
+	BranchID          types.String `tfsdk:"branch_id"`
 	ComponentID       types.String `tfsdk:"component_id"`
 	Name              types.String `tfsdk:"name"`
 	Description       types.String `tfsdk:"description"`
@@ -39,7 +38,7 @@ type RowModel struct {
 // GetConfigurationFQN returns the compound ID for a configuration, URL-encoding each segment.
 // This ensures that special characters (such as '/') in IDs do not break the FQN structure.
 func GetConfigurationFQN(model *ConfigModel) string {
-	branchID := strconv.FormatInt(model.BranchID.ValueInt64(), 10)
+	branchID := model.BranchID.ValueString()
 	componentID := model.ComponentID.ValueString()
 	configID := model.ID.ValueString()
 

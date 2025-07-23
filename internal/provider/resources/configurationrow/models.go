@@ -3,14 +3,13 @@ package configurationrow
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Model represents the configuration row resource model.
 type Model struct {
-	BranchID          types.Int64  `tfsdk:"branch_id"`
+	BranchID          types.String `tfsdk:"branch_id"`
 	ComponentID       types.String `tfsdk:"component_id"`
 	ConfigID          types.String `tfsdk:"configuration_id"`
 	ConfigurationFQN  types.String `tfsdk:"configuration_fqn"`
@@ -25,7 +24,7 @@ type Model struct {
 // GetConfigRowModelID returns the compound ID for a configuration row, URL-encoding each segment.
 // This ensures that special characters (such as '/') in IDs do not break the FQN structure.
 func GetConfigRowModelID(model *Model) string {
-	branchID := strconv.FormatInt(model.BranchID.ValueInt64(), 10)
+	branchID := model.BranchID.ValueString()
 	componentID := model.ComponentID.ValueString()
 	configID := model.ConfigID.ValueString()
 

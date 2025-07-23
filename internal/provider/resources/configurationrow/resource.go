@@ -8,13 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -50,22 +48,22 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 		MarkdownDescription: "Manages a configuration row in Keboola. You must specify either `configuration_fqn` or " +
 			"all of `branch_id`, `component_id`, and `configuration_id`.",
 		Attributes: map[string]schema.Attribute{
-			"branch_id": schema.Int64Attribute{
+			"branch_id": schema.StringAttribute{
 				Description:         "ID of the branch. Mutually exclusive with 'configuration_fqn'.",
 				MarkdownDescription: "ID of the branch. Mutually exclusive with `configuration_fqn`.",
 				Optional:            true,
-				Validators: []validator.Int64{
-					int64validator.ConflictsWith(
+				Validators: []validator.String{
+					stringvalidator.ConflictsWith(
 						path.MatchRelative().AtParent().AtName("configuration_fqn"),
 					),
-					int64validator.ExactlyOneOf(
+					stringvalidator.ExactlyOneOf(
 						path.MatchRelative().AtParent().AtName("branch_id"),
 						path.MatchRelative().AtParent().AtName("configuration_fqn"),
 					),
 				},
 				// ForceNew: Changing branch_id requires recreation of the row resource.
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplace(),
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"component_id": schema.StringAttribute{
@@ -212,8 +210,13 @@ func getKeyFromModel(ctx context.Context, m Model) (keboola.ConfigRowKey, error)
 		return keboola.ConfigRowKey{}, errMissingIdentifiers
 	}
 
+	branchID, err := strconv.ParseInt(m.BranchID.ValueString(), 10, 64)
+	if err != nil {
+		return keboola.ConfigRowKey{}, fmt.Errorf("invalid branch_id: %w", err)
+	}
+
 	return keboola.ConfigRowKey{
-		BranchID:    keboola.BranchID(m.BranchID.ValueInt64()),
+		BranchID:    keboola.BranchID(branchID),
 		ComponentID: keboola.ComponentID(m.ComponentID.ValueString()),
 		ConfigID:    keboola.ConfigID(m.ConfigID.ValueString()),
 	}, nil

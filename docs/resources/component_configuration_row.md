@@ -58,7 +58,7 @@ resource "keboola_component_configuration_row" "extractor_sql_opportunity" {
 
 ### Optional
 
-- `branch_id` (Number) ID of the branch. Mutually exclusive with `configuration_fqn`.
+- `branch_id` (String) ID of the branch. Mutually exclusive with `configuration_fqn`.
 - `change_description` (String) Change description associated with the configuration row change.
 - `component_id` (String) ID of the component. Mutually exclusive with `configuration_fqn`.
 - `configuration` (String) Content of the configuration row as a JSON object.
