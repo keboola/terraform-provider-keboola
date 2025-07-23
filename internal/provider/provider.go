@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -23,8 +24,8 @@ import (
 )
 
 const (
-	KbcHost  = "KBC_HOST"
-	KbcToken = "KBC_TOKEN"
+	KbcHostnameSuffix = "KBC_HOSTNAME_SUFFIX"
+	KbcToken          = "KBC_TOKEN"
 )
 
 // Ensure the implementation satisfies the expected interfaces.
@@ -39,8 +40,8 @@ type keboolaProvider struct {
 
 // keboolaProviderModel maps provider schema data to a Go type.
 type keboolaProviderModel struct {
-	Host  types.String `tfsdk:"host"`
-	Token types.String `tfsdk:"token"`
+	HostnameSuffix types.String `tfsdk:"hostname_suffix"`
+	Token          types.String `tfsdk:"token"`
 }
 
 // New creates a new provider instance.
@@ -60,8 +61,9 @@ func (p *keboolaProvider) Metadata(_ context.Context, _ provider.MetadataRequest
 
 // Schema defines the provider-level schema for configuration data.
 func (p *keboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, resp *provider.SchemaResponse) {
-	hostEnvVar := "URL of the Keboola Connection API. Can be also provided via " +
-		KbcHost + " environment variable."
+	hostnameSuffixEnvVar := "Hostname suffix for the Keboola Stack (e.g., 'keboola.com'). " +
+		"The provider will automatically prepend 'connection.' to construct the full URL. " +
+		"Can be also provided via " + KbcHostnameSuffix + " environment variable."
 	tokenEnvVar := "API Token used to authenticate against the API. Can be also provided via " +
 		KbcToken + " environment variable."
 
@@ -71,9 +73,9 @@ func (p *keboolaProvider) Schema(_ context.Context, _ provider.SchemaRequest, re
 		Blocks:              map[string]schema.Block{},
 		DeprecationMessage:  "",
 		Attributes: map[string]schema.Attribute{
-			"host": schema.StringAttribute{
+			"hostname_suffix": schema.StringAttribute{
 				Optional:    true,
-				Description: hostEnvVar,
+				Description: hostnameSuffixEnvVar,
 			},
 			"token": schema.StringAttribute{
 				Optional:    true,
@@ -104,16 +106,16 @@ func (p *keboolaProvider) Configure(
 
 	// If practitioner provided a configuration value for any of the
 	// attributes, it must be a known value.
-	if config.Host.IsUnknown() {
-		hostErrMsg := "The provider cannot create the Keboola API client as there is an unknown " +
-			"configuration value for the Keboola API host. " +
+	if config.HostnameSuffix.IsUnknown() {
+		hostnameSuffixErrMsg := "The provider cannot create the Keboola API client as there is an unknown " +
+			"configuration value for the Keboola API hostname suffix. " +
 			"Either target apply the source of the value first, set the value statically in the configuration, " +
-			"or use the " + KbcHost + " environment variable."
+			"or use the " + KbcHostnameSuffix + " environment variable."
 
 		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Unknown Keboola API Host",
-			hostErrMsg,
+			path.Root("hostname_suffix"),
+			"Unknown Keboola API Hostname Suffix",
+			hostnameSuffixErrMsg,
 		)
 	}
 
@@ -136,11 +138,11 @@ func (p *keboolaProvider) Configure(
 
 	// Default values to environment variables, but override
 	// with Terraform configuration value if set.
-	host := os.Getenv(KbcHost)   //nolint: forbidigo
-	token := os.Getenv(KbcToken) //nolint: forbidigo
+	hostnameSuffix := os.Getenv(KbcHostnameSuffix) //nolint: forbidigo
+	token := os.Getenv(KbcToken)                   //nolint: forbidigo
 
-	if !config.Host.IsNull() {
-		host = config.Host.ValueString()
+	if !config.HostnameSuffix.IsNull() {
+		hostnameSuffix = config.HostnameSuffix.ValueString()
 	}
 
 	if !config.Token.IsNull() {
@@ -149,16 +151,16 @@ func (p *keboolaProvider) Configure(
 
 	// If any of the expected configurations are missing, return
 	// errors with provider-specific guidance.
-	if host == "" {
-		missingHostMsg := "The provider cannot create the Keboola API client as there is a missing or empty " +
-			"value for the Keboola API host. " +
-			"Set the host value in the configuration or use the " + KbcHost + " environment variable. " +
+	if hostnameSuffix == "" {
+		missingHostnameSuffixMsg := "The provider cannot create the Keboola API client as there is a missing or empty " +
+			"value for the Keboola API hostname suffix. " +
+			"Set the hostname_suffix value in the configuration or use the " + KbcHostnameSuffix + " environment variable. " +
 			"If either is already set, ensure the value is not empty."
 
 		resp.Diagnostics.AddAttributeError(
-			path.Root("host"),
-			"Missing Keboola API Host",
-			missingHostMsg,
+			path.Root("hostname_suffix"),
+			"Missing Keboola API Hostname Suffix",
+			missingHostnameSuffixMsg,
 		)
 	}
 
@@ -179,12 +181,30 @@ func (p *keboolaProvider) Configure(
 		return
 	}
 
-	ctx = tflog.SetField(ctx, "keboola_host", host)
+	// Validate the hostname suffix to ensure it does not already contain a protocol or subdomain
+	if strings.HasPrefix(hostnameSuffix, "http://") ||
+		strings.HasPrefix(hostnameSuffix, "https://") ||
+		strings.HasPrefix(hostnameSuffix, "connection.") {
+		resp.Diagnostics.AddAttributeError(
+			path.Root("hostname_suffix"),
+			"Invalid Keboola API Hostname Suffix",
+			"The hostname_suffix value must not include a protocol (http:// or https://) or start with 'connection.'. "+
+				"Please provide a valid hostname suffix.",
+		)
+
+		return
+	}
+
+	// Construct the full host URL by prepending "connection." to the hostname suffix
+	fullHost := "https://connection." + hostnameSuffix
+
+	ctx = tflog.SetField(ctx, "keboola_hostname_suffix", hostnameSuffix)
+	ctx = tflog.SetField(ctx, "keboola_full_host", fullHost)
 	ctx = tflog.SetField(ctx, "keboola_token", token)
 	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "keboola_token")
 
 	// Create a new Keboola Storage API client using the configuration values
-	sapiClient, err := keboola.NewAuthorizedAPI(ctx, host, token)
+	sapiClient, err := keboola.NewAuthorizedAPI(ctx, fullHost, token)
 	if err != nil {
 		resp.Diagnostics.AddError("Could not initialize Keboola client", err.Error())
 
