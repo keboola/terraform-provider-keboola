@@ -2,6 +2,7 @@ package abstraction
 
 import (
 	"context"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -160,7 +161,22 @@ func isSentinelError(err error) bool {
 	// This is a simple approach that checks for the error message
 	// If more sentinel errors are added, this could be enhanced to use error wrapping
 	// and type assertions
-	return err != nil && err.Error() == "encryption resource is stateless, no API call needed"
+	if err == nil {
+		return false
+	}
+
+	// Check for stateless resource error
+	if err.Error() == "encryption resource is stateless, no API call needed" {
+		return true
+	}
+
+	// Check for resource not found error (404) which is common during destroy operations
+	// when resources are deleted externally
+	if strings.Contains(err.Error(), "Not found: ") {
+		return true
+	}
+
+	return false
 }
 
 // ExecuteUpdate executes the update operation with proper error handling and mapping.

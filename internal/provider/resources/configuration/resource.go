@@ -330,8 +330,45 @@ func (r *Resource) Update(
 				return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
 			}
 
+			tflog.Info(ctx, "Updating configuration", map[string]any{
+				"rows_count": len(apiModel.Rows),
+			})
+
+			for _, row := range apiModel.Rows {
+				tflog.Info(ctx, "Updating configuration", map[string]any{
+					"apiModel": row.ConfigRowKey,
+				})
+			}
+
+			// Determine which fields to update based on rows presence and state changes
+			var changeFields []string
+
+			// Get state row count for comparison
+			stateRowCount := 0
+
+			if !state.Rows.IsNull() && !state.Rows.IsUnknown() {
+				var stateRows []any
+				if diags := state.Rows.ElementsAs(ctx, &stateRows, false); !diags.HasError() {
+					stateRowCount = len(stateRows)
+				}
+			}
+
+			planRowCount := len(apiModel.Rows)
+
+			tflog.Info(ctx, "Row count comparison", map[string]any{
+				"state_row_count": stateRowCount,
+				"plan_row_count":  planRowCount,
+			})
+
+			// Include rows and rowsSortOrder fields when:
+			// 1. Plan has rows (rows are being added/modified)
+			// 2. State had rows but plan has no rows (rows are being removed)
+			if planRowCount > 0 || (stateRowCount > 0 && planRowCount == 0) {
+				changeFields = append(changeFields, "rows", "rowsSortOrder")
+			}
+
 			// Update configuration
-			resConfig, err := r.client.UpdateConfigRequest(apiModel, nil).Send(ctx)
+			resConfig, err := r.client.UpdateConfigRequest(apiModel, changeFields).Send(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("could not update configuration: %w", err)
 			}

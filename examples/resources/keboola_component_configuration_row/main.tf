@@ -7,7 +7,14 @@ terraform {
 }
 
 provider "keboola" {
-  # Optionally set hostname_suffix and token via environment variables
-  # hostname_suffix = "keboola.com"
-  # token = "..."
+  hostname_suffix = var.hostname_suffix
+  token           = var.token
+}
+
+variable "hostname_suffix" {
+  type = string
+}
+
+variable "token" {
+  type = string
 }
