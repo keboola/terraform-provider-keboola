@@ -140,6 +140,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"fqn": schema.StringAttribute{
 				Description: "Fully qualified name for the configuration, composed as branch_id/component_id/configuration_id.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"rows": schema.ListNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{

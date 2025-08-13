@@ -128,6 +128,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				MarkdownDescription: "Description of the configuration row.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"change_description": schema.StringAttribute{
 				Description:         "Change description associated with the configuration row change.",
