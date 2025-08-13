@@ -337,9 +337,10 @@ func (r *Resource) Update(
 				"rows_count": len(apiModel.Rows),
 			})
 
+			// Verbose logging: only appears in debug mode
 			for _, row := range apiModel.Rows {
-				tflog.Info(ctx, "Updating configuration", map[string]any{
-					"apiModel": row.ConfigRowKey,
+				tflog.Debug(ctx, "Updating configuration row", map[string]any{
+					"configRowKey": row.ConfigRowKey,
 				})
 			}
 
