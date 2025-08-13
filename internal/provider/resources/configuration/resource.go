@@ -341,7 +341,13 @@ func (r *Resource) Update(
 			}
 
 			// Determine which fields to update based on rows presence and state changes
-			var changeFields []string
+			changeFields := []string{
+				"name",
+				"description",
+				"isDisabled",
+				"changeDescription",
+				"configuration",
+			}
 
 			// Get state row count for comparison
 			stateRowCount := 0
@@ -364,10 +370,9 @@ func (r *Resource) Update(
 			// 1. Plan has rows (rows are being added/modified)
 			// 2. State had rows but plan has no rows (rows are being removed)
 			if planRowCount > 0 || (stateRowCount > 0 && planRowCount == 0) {
-				changeFields = append(changeFields, "rows", "rowsSortOrder")
+				changeFields = append(changeFields, "rows")
 			}
 
-			// Update configuration
 			resConfig, err := r.client.UpdateConfigRequest(apiModel, changeFields).Send(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("could not update configuration: %w", err)

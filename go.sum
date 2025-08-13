@@ -321,8 +321,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/keboola/go-utils v1.3.3 h1:H3FuF8aRQ5eO529aFXja6Z6PQ+iADnsTb3Ilnc6EwhA=
 github.com/keboola/go-utils v1.3.3/go.mod h1:xBr4P0ErJTbuQihw5Fq4fE7VYMhBWxDQj+UWInV4x/k=
-github.com/keboola/keboola-sdk-go/v2 v2.5.1-0.20250813062445-e386f6445d38 h1:CM7MtuanvkyWeKSoX3PYVnwj3SNuPHf21qEaYKhtf2U=
-github.com/keboola/keboola-sdk-go/v2 v2.5.1-0.20250813062445-e386f6445d38/go.mod h1:tkEFX2hyBTBz7TXr77ysaTve46LxfNszomvxQVMzQ4c=
+github.com/keboola/keboola-sdk-go/v2 v2.5.1-0.20250813083832-646304cbfa37 h1:WCIrYPFx9hMH6URdpBlnHSb8a1t35orLLeDNVgEy7eo=
+github.com/keboola/keboola-sdk-go/v2 v2.5.1-0.20250813083832-646304cbfa37/go.mod h1:tkEFX2hyBTBz7TXr77ysaTve46LxfNszomvxQVMzQ4c=
 github.com/kevinburke/ssh_config v1.2.0 h1:x584FjTGwHzMwvHx18PXxbBVzfnxogHaAReU4gf13a4=
 github.com/kevinburke/ssh_config v1.2.0/go.mod h1:CT57kijsi8u/K/BOFA39wgDQJ9CxiF4nAY/ojJ6r6mM=
 github.com/keybase/go-keychain v0.0.1 h1:way+bWYa6lDppZoZcgMbYsvC7GxljxrskdNInRtuthU=
