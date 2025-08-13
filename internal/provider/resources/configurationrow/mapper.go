@@ -65,7 +65,7 @@ func (m *Mapper) MapAPIToTerraform(_ context.Context, apiModel *keboola.ConfigRo
 }
 
 // MapTerraformToAPI converts a Terraform model to an API model.
-func (m *Mapper) MapTerraformToAPI(ctx context.Context, _, tfModel Model) (*keboola.ConfigRow, error) {
+func (m *Mapper) MapTerraformToAPI(ctx context.Context, stateModel, tfModel Model) (*keboola.ConfigRow, error) {
 	// Use getKeyFromModel to extract the parent key from the model (handles configuration_fqn or direct fields)
 	rowKey, err := getKeyFromModelWithDecode(ctx, tfModel)
 	if err != nil {
@@ -101,11 +101,21 @@ func (m *Mapper) MapTerraformToAPI(ctx context.Context, _, tfModel Model) (*kebo
 		return nil, err
 	}
 
+	// Set default change description if not provided
+	changeDescription := tfModel.ChangeDescription.ValueString()
+	if tfModel.ChangeDescription.IsUnknown() || tfModel.ChangeDescription.IsNull() {
+		if stateModel.ID.IsUnknown() || stateModel.ID.IsNull() {
+			changeDescription = "Created by Keboola Terraform Provider"
+		} else {
+			changeDescription = "Updated by Keboola Terraform Provider"
+		}
+	}
+
 	return &keboola.ConfigRow{
 		ConfigRowKey:      rowKey,
 		Name:              tfModel.Name.ValueString(),
 		Description:       tfModel.Description.ValueString(),
-		ChangeDescription: tfModel.ChangeDescription.ValueString(),
+		ChangeDescription: changeDescription,
 		IsDisabled:        tfModel.IsDisabled.ValueBool(),
 		Content:           contentMap,
 	}, nil
