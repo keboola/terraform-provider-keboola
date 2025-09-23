@@ -15,6 +15,7 @@
 vendor/
 
 **/*tfstate*
+**/*.tfvars
 
 .env
 .envrc

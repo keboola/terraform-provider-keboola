@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk/v2 v2.37.0
 	github.com/hashicorp/terraform-plugin-testing v1.13.2
 	github.com/keboola/go-utils v1.3.3
-	github.com/keboola/keboola-sdk-go/v2 v2.3.1-0.20250722071103-5bc587adc937
+	github.com/keboola/keboola-sdk-go/v2 v2.5.1-0.20250813083832-646304cbfa37
 	github.com/stretchr/testify v1.10.0
 )
 

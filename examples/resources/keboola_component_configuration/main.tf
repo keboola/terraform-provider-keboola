@@ -7,8 +7,14 @@ terraform {
 }
 
 provider "keboola" {
-  # can be defined via KBC_HOSTNAME_SUFFIX env
-  # hostname_suffix = "keboola.com"
-  # can be defined via KBC_TOKEN env
-  # token =
+  hostname_suffix = var.hostname_suffix
+  token           = var.token
+}
+
+variable "hostname_suffix" {
+  type = string
+}
+
+variable "token" {
+  type = string
 }

@@ -128,6 +128,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 				MarkdownDescription: "Description of the configuration row.",
 				Optional:            true,
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"change_description": schema.StringAttribute{
 				Description:         "Change description associated with the configuration row change.",
@@ -183,6 +186,30 @@ var (
 	errInvalidBranchIDFormat = errors.New("invalid branch_id format, expected integer")
 	errRowIDMissing          = errors.New("row ID is missing in state")
 )
+
+// ResourceNotFoundError represents a resource not found error that should be treated as a sentinel error.
+type ResourceNotFoundError struct {
+	ResourceName string
+}
+
+// Error implements the error interface for ResourceNotFoundError.
+func (e *ResourceNotFoundError) Error() string {
+	return "Not found: " + e.ResourceName
+}
+
+// isNotFoundError checks if the error is a 404 not found error from the Keboola API.
+// This function detects the specific error pattern returned by the Keboola API for deleted resources.
+func isNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Check for the specific error pattern from Keboola API
+	// Error message contains: errCode: "notFound", httpCode: "404"
+	errMsg := err.Error()
+
+	return strings.Contains(errMsg, `errCode: "notFound"`) && strings.Contains(errMsg, `httpCode: "404"`)
+}
 
 const configurationFQNPartsCount = 3 // for magic number check
 
@@ -285,6 +312,17 @@ func (r *Resource) Read(ctx context.Context, req resource.ReadRequest, resp *res
 
 		row, err := r.client.GetConfigRowRequest(key).Send(ctx)
 		if err != nil {
+			// Check if this is a 404 error indicating the resource was already deleted
+			// This is a common scenario during destroy operations when resources are deleted externally
+			if isNotFoundError(err) {
+				tflog.Info(ctx, "Configuration row not found (likely already deleted), treating as deleted", map[string]any{
+					"configuration_fqn": GetConfigRowModelID(&state),
+					"row_id":            key.ID,
+				})
+				// Return a sentinel error to indicate the resource should be treated as deleted
+				return nil, &ResourceNotFoundError{ResourceName: "configuration row"}
+			}
+
 			return nil, fmt.Errorf("GetConfigRowRequest failed: %w", err)
 		}
 
@@ -337,6 +375,18 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 		_, err = r.client.DeleteConfigRowRequest(key).Send(ctx)
 		if err != nil {
+			// Check if this is a 404 error indicating the resource was already deleted
+			// This is a common scenario during destroy operations when resources are deleted externally
+			if isNotFoundError(err) {
+				tflog.Info(ctx, "Configuration row not found during delete (likely already deleted), treating as successful",
+					map[string]any{
+						"configuration_fqn": GetConfigRowModelID(&state),
+						"row_id":            key.ID,
+					})
+				// Return a sentinel error to indicate the deletion was successful
+				return &ResourceNotFoundError{ResourceName: "configuration row"}
+			}
+
 			return fmt.Errorf("DeleteConfigRowRequest failed: %w", err)
 		}
 

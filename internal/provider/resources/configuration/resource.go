@@ -140,6 +140,9 @@ func (r *Resource) Schema(_ context.Context, _ resource.SchemaRequest, resp *res
 			"fqn": schema.StringAttribute{
 				Description: "Fully qualified name for the configuration, composed as branch_id/component_id/configuration_id.",
 				Computed:    true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"rows": schema.ListNestedAttribute{
 				NestedObject: schema.NestedAttributeObject{
@@ -330,8 +333,51 @@ func (r *Resource) Update(
 				return nil, fmt.Errorf("failed to map Terraform model to API: %w", err)
 			}
 
-			// Update configuration
-			resConfig, err := r.client.UpdateConfigRequest(apiModel, nil).Send(ctx)
+			tflog.Info(ctx, "Updating configuration", map[string]any{
+				"rows_count": len(apiModel.Rows),
+			})
+
+			// Verbose logging: only appears in debug mode
+			for _, row := range apiModel.Rows {
+				tflog.Debug(ctx, "Updating configuration row", map[string]any{
+					"configRowKey": row.ConfigRowKey,
+				})
+			}
+
+			// Determine which fields to update based on rows presence and state changes
+			changeFields := []string{
+				"name",
+				"description",
+				"isDisabled",
+				"changeDescription",
+				"configuration",
+			}
+
+			// Get state row count for comparison
+			stateRowCount := 0
+
+			if !state.Rows.IsNull() && !state.Rows.IsUnknown() {
+				var stateRows []any
+				if diags := state.Rows.ElementsAs(ctx, &stateRows, false); !diags.HasError() {
+					stateRowCount = len(stateRows)
+				}
+			}
+
+			planRowCount := len(apiModel.Rows)
+
+			tflog.Info(ctx, "Row count comparison", map[string]any{
+				"state_row_count": stateRowCount,
+				"plan_row_count":  planRowCount,
+			})
+
+			// Include rows and rowsSortOrder fields when:
+			// 1. Plan has rows (rows are being added/modified)
+			// 2. State had rows but plan has no rows (rows are being removed)
+			if planRowCount > 0 || (stateRowCount > 0 && planRowCount == 0) {
+				changeFields = append(changeFields, "rows")
+			}
+
+			resConfig, err := r.client.UpdateConfigRequest(apiModel, changeFields).Send(ctx)
 			if err != nil {
 				return nil, fmt.Errorf("could not update configuration: %w", err)
 			}

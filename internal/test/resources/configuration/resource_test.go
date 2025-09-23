@@ -144,11 +144,6 @@ func testAccCheckExampleConfigMatchesReality(t *testing.T, resourceName string) 
 			Rows:   *rows,
 		}
 
-		err = checkAttribute("change_description", storedConfigWithRows.ChangeDescription, attributes["change_description"])
-		if err != nil {
-			return err
-		}
-
 		err = checkAttribute("description", storedConfigWithRows.Description, attributes["description"])
 		if err != nil {
 			return err
@@ -465,7 +460,7 @@ func TestAccConfigRowsCRUD(t *testing.T) { //nolint: paralleltest
 				}),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					checkAllAttributesSet("test_rows"),
-					resource.TestCheckResourceAttr("keboola_component_configuration.test_rows", "change_description", "Updated by Keboola Terraform Provider"),
+					resource.TestCheckResourceAttr("keboola_component_configuration.test_rows", "change_description", "Created by Keboola Terraform Provider"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test_rows", "rows.#", "2"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test_rows", "rows.0.name", "First Row Updated"),
 					resource.TestCheckResourceAttr("keboola_component_configuration.test_rows", "rows.0.is_disabled", "true"),

@@ -120,13 +120,23 @@ func (m *ConfigMapper) MapTerraformToAPI(
 		return nil, err
 	}
 
+	// Set default change description if not provided
+	changeDescription := tfModel.ChangeDescription.ValueString()
+	if tfModel.ChangeDescription.IsUnknown() || tfModel.ChangeDescription.IsNull() {
+		if stateModel.ID.IsUnknown() || stateModel.ID.IsNull() {
+			changeDescription = "Created by Keboola Terraform Provider"
+		} else {
+			changeDescription = "Updated by Keboola Terraform Provider"
+		}
+	}
+
 	// Create the full API model
 	config := &keboola.ConfigWithRows{
 		Config: &keboola.Config{
 			ConfigKey:         key,
 			Name:              tfModel.Name.ValueString(),
 			Description:       tfModel.Description.ValueString(),
-			ChangeDescription: tfModel.ChangeDescription.ValueString(),
+			ChangeDescription: changeDescription,
 			Content:           contentMap,
 			IsDisabled:        tfModel.IsDisabled.ValueBool(),
 			RowsSortOrder:     rowsSortOrder,
@@ -206,15 +216,6 @@ func (m *ConfigMapper) ValidateTerraformModel(
 				"Error validating configuration",
 				"Could not parse configuration JSON: "+err.Error(),
 			)
-		}
-	}
-
-	// Set defaults for required fields that can have default
-	if newModel.ChangeDescription.IsUnknown() {
-		if oldModel == nil {
-			newModel.ChangeDescription = types.StringValue("Created by Keboola Terraform Provider")
-		} else {
-			newModel.ChangeDescription = types.StringValue("Updated by Keboola Terraform Provider")
 		}
 	}
 
