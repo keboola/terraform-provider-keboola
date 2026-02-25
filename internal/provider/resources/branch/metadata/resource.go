@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -16,6 +17,7 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
+	_ resource.ResourceWithImportState = &Resource{}
 	_ resource.Resource = &Resource{
 		base: abstraction.BaseResource[Model, *keboola.MetadataDetail]{}, client: nil, projectID: 0,
 	}
@@ -213,4 +215,15 @@ func (r *Resource) updateMetadata(ctx context.Context, model Model) (*keboola.Me
 		Key:   model.Key.ValueString(),
 		Value: model.Value.ValueString(),
 	}, nil
+}
+
+// ImportState imports an existing branch metadata resource by branch ID.
+// The import ID should be the branch ID as a string (e.g., "12345").
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing branch metadata resource", map[string]any{
+		"id": req.ID,
+	})
+	
+	// Use branch_id for import
+	resource.ImportStatePassthroughID(ctx, path.Root("branch_id"), req, resp)
 }

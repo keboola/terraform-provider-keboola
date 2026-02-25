@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -18,12 +19,14 @@ import (
 
 // Sentinel errors for encrypted value resource.
 var (
+	_ resource.ResourceWithImportState = &Resource{}
 	// ErrStateless indicates that no API call is needed for this operation as the resource is stateless.
 	ErrStateless = errors.New("encrypted value resource is stateless, no API call needed")
 )
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
+	_ resource.ResourceWithImportState = &Resource{}
 	_ resource.Resource = &Resource{
 		base: abstraction.BaseResource[Model, *EncryptResponse]{}, client: nil, projectID: 0,
 	}
@@ -247,4 +250,14 @@ func (r *Resource) Delete(ctx context.Context, _ resource.DeleteRequest, _ *reso
 	// For stateless resources, no API call is needed and no error should be returned.
 	// This is a no-op. Terraform will remove the state automatically.
 	// Do not return an error, otherwise Terraform will treat the resource as broken.
+}
+
+// ImportState imports an existing encrypted value resource.
+// The import ID should be the encrypted value string itself.
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing encrypted value resource", map[string]any{
+		"id": req.ID,
+	})
+	
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

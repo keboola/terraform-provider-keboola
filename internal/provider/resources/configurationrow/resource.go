@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"strconv"
 	"strings"
 
@@ -177,6 +178,7 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 // Static error variables for consistent error handling.
 var (
+	_ resource.ResourceWithImportState = &Resource{}
 	errInvalidConfigurationFQNFormat = errors.New(
 		"invalid configuration_fqn format, expected branch_id/component_id/configuration_id",
 	)
@@ -392,4 +394,14 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 		return nil
 	})
+}
+
+// ImportState imports an existing configuration row resource by compound ID.
+// The import ID should be in format "component_id/configuration_id/row_id".
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing configuration row resource", map[string]any{
+		"id": req.ID,
+	})
+	
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

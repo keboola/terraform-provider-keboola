@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -16,9 +17,10 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource = &Resource{
+	_ resource.Resource              = &Resource{
 		base: abstraction.BaseResource[Model, *keboola.Branch]{}, client: nil, projectID: 0,
 	}
+	_ resource.ResourceWithImportState = &Resource{}
 )
 
 // Resource is the branch resource implementation.
@@ -186,4 +188,15 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 		return nil
 	})
+}
+
+// ImportState imports an existing branch resource by ID.
+// The import ID should be the branch ID as a string (e.g., "12345").
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing branch resource", map[string]any{
+		"id": req.ID,
+	})
+
+	// Use the ID attribute for import (it will be converted to Int64 by the Read method)
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

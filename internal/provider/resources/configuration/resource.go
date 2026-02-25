@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -21,6 +22,7 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
+	_ resource.ResourceWithImportState = &Resource{}
 	_ resource.Resource = &Resource{
 		base:   abstraction.BaseResource[ConfigModel, *keboola.ConfigWithRows]{},
 		client: nil,
@@ -468,4 +470,14 @@ func (m forceNewIfIDChangesModifier) PlanModifyString(
 // This helps to keep PlanModifyString logic clean and readable.
 func isStateOrPlanValueInvalid(req planmodifier.StringRequest) bool {
 	return req.StateValue.IsNull() || req.StateValue.IsUnknown() || req.PlanValue.IsNull() || req.PlanValue.IsUnknown()
+}
+
+// ImportState imports an existing configuration resource by compound ID.
+// The import ID should be in format "component_id/configuration_id" (e.g., "keboola.ex-db-mysql/12345").
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing configuration resource", map[string]any{
+		"id": req.ID,
+	})
+	
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
