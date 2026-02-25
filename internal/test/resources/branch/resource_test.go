@@ -53,6 +53,12 @@ func TestAccBranchResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("keboola_branch.test", "name"),
 				),
 			},
+			// ImportState testing
+			{
+				ResourceName:      "keboola_branch.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 			// Attempt to update the branch
 			{
 				Config: test.ProviderConfig() + testBranchResource("test", map[string]any{

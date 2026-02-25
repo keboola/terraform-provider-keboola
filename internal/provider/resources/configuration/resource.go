@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -473,11 +474,48 @@ func isStateOrPlanValueInvalid(req planmodifier.StringRequest) bool {
 }
 
 // ImportState imports an existing configuration resource by compound ID.
-// The import ID should be in format "component_id/configuration_id" (e.g., "keboola.ex-db-mysql/12345").
+// The import ID should be in format "branch_id/component_id/configuration_id" (e.g., "123/keboola.ex-db-mysql/12345").
+// If branch_id is omitted, default branch will be used (e.g., "keboola.ex-db-mysql/12345").
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing configuration resource", map[string]any{
-		"id": req.ID,
+		"import_id": req.ID,
 	})
-	
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+
+	// Parse the import ID
+	parts := strings.Split(req.ID, "/")
+
+	var branchID, componentID, configID string
+
+	switch len(parts) {
+	case 2:
+		// Format: component_id/configuration_id (use default branch)
+		componentID = parts[0]
+		configID = parts[1]
+		// branchID will be set by provider default
+	case 3:
+		// Format: branch_id/component_id/configuration_id
+		branchID = parts[0]
+		componentID = parts[1]
+		configID = parts[2]
+	default:
+		resp.Diagnostics.AddError(
+			"Invalid Import ID Format",
+			fmt.Sprintf("Expected import ID format: 'branch_id/component_id/configuration_id' or 'component_id/configuration_id', got: %s", req.ID),
+		)
+		return
+	}
+
+	// Set the parsed values in state
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), configID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("component_id"), componentID)...)
+
+	if branchID != "" {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("branch_id"), branchID)...)
+	}
+
+	tflog.Info(ctx, "Parsed import ID", map[string]any{
+		"branch_id":    branchID,
+		"component_id": componentID,
+		"config_id":    configID,
+	})
 }

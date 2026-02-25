@@ -308,6 +308,24 @@ func TestAccConfigResource(t *testing.T) {
 					testAccCheckExampleConfigurationDataSet("keboola_component_configuration.test", "storage.input.tables[0]", "in.data1"),
 				),
 			},
+			// ImportState testing
+			{
+				ResourceName:      "keboola_component_configuration.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["keboola_component_configuration.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					// Import format: branch_id/component_id/configuration_id
+					return fmt.Sprintf("%s/%s/%s",
+						rs.Primary.Attributes["branch_id"],
+						rs.Primary.Attributes["component_id"],
+						rs.Primary.Attributes["id"],
+					), nil
+				},
+			},
 			// Change configuration id - expects error
 			{
 				Config: test.ProviderConfig() + exGenericResource("test", map[string]any{

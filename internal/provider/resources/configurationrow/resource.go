@@ -396,11 +396,51 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 }
 
 // ImportState imports an existing configuration row resource by compound ID.
-// The import ID should be in format "component_id/configuration_id/row_id".
+// The import ID should be in format "branch_id/component_id/configuration_id/row_id".
+// If branch_id is omitted, default branch will be used (e.g., "component_id/configuration_id/row_id").
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing configuration row resource", map[string]any{
-		"id": req.ID,
+		"import_id": req.ID,
 	})
-	
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+
+	// Parse the import ID
+	parts := strings.Split(req.ID, "/")
+
+	var branchID, componentID, configID, rowID string
+
+	switch len(parts) {
+	case 3:
+		// Format: component_id/configuration_id/row_id (use default branch)
+		componentID = parts[0]
+		configID = parts[1]
+		rowID = parts[2]
+	case 4:
+		// Format: branch_id/component_id/configuration_id/row_id
+		branchID = parts[0]
+		componentID = parts[1]
+		configID = parts[2]
+		rowID = parts[3]
+	default:
+		resp.Diagnostics.AddError(
+			"Invalid Import ID Format",
+			fmt.Sprintf("Expected import ID format: 'branch_id/component_id/configuration_id/row_id' or 'component_id/configuration_id/row_id', got: %s", req.ID),
+		)
+		return
+	}
+
+	// Set the parsed values in state
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), rowID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("component_id"), componentID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("configuration_id"), configID)...)
+
+	if branchID != "" {
+		resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("branch_id"), branchID)...)
+	}
+
+	tflog.Info(ctx, "Parsed import ID", map[string]any{
+		"branch_id":        branchID,
+		"component_id":     componentID,
+		"configuration_id": configID,
+		"row_id":           rowID,
+	})
 }

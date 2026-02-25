@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -217,13 +218,33 @@ func (r *Resource) updateMetadata(ctx context.Context, model Model) (*keboola.Me
 	}, nil
 }
 
-// ImportState imports an existing branch metadata resource by branch ID.
-// The import ID should be the branch ID as a string (e.g., "12345").
+// ImportState imports an existing branch metadata resource by compound ID.
+// The import ID should be in format "branch_id/metadata_key" (e.g., "12345/KBC.createdBy").
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing branch metadata resource", map[string]any{
-		"id": req.ID,
+		"import_id": req.ID,
 	})
-	
-	// Use branch_id for import
-	resource.ImportStatePassthroughID(ctx, path.Root("branch_id"), req, resp)
+
+	// Parse the import ID
+	parts := strings.Split(req.ID, "/")
+
+	if len(parts) != 2 {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID Format",
+			fmt.Sprintf("Expected import ID format: 'branch_id/metadata_key', got: %s", req.ID),
+		)
+		return
+	}
+
+	branchID := parts[0]
+	metadataKey := parts[1]
+
+	// Set the parsed values in state
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("branch_id"), branchID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("key"), metadataKey)...)
+
+	tflog.Info(ctx, "Parsed import ID", map[string]any{
+		"branch_id": branchID,
+		"key":       metadataKey,
+	})
 }
