@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -177,8 +177,8 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 // Static error variables for consistent error handling.
 var (
-	_ resource.ResourceWithImportState = &Resource{}
-	errInvalidConfigurationFQNFormat = errors.New(
+	_                                resource.ResourceWithImportState = &Resource{}
+	errInvalidConfigurationFQNFormat                                  = errors.New(
 		"invalid configuration_fqn format, expected branch_id/component_id/configuration_id",
 	)
 	errMissingIdentifiers = errors.New(

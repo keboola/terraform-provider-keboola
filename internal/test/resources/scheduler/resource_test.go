@@ -129,6 +129,12 @@ func TestAccSchedulerResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("keboola_component_configuration.test_config_scheduler", "id"),
 				),
 			},
+			// ImportState testing
+			{
+				ResourceName:      "keboola_scheduler.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
 			// Attempt to update the schedule by changing the underlying config's cronTab - should force replacement
 			{
 				Config: test.ProviderConfig() + testSchedulerResource("test", map[string]any{

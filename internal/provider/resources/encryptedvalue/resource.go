@@ -19,7 +19,6 @@ import (
 
 // Sentinel errors for encrypted value resource.
 var (
-	_ resource.ResourceWithImportState = &Resource{}
 	// ErrStateless indicates that no API call is needed for this operation as the resource is stateless.
 	ErrStateless = errors.New("encrypted value resource is stateless, no API call needed")
 )
@@ -27,7 +26,7 @@ var (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.ResourceWithImportState = &Resource{}
-	_ resource.Resource = &Resource{
+	_ resource.Resource                = &Resource{
 		base: abstraction.BaseResource[Model, *EncryptResponse]{}, client: nil, projectID: 0,
 	}
 	_ resource.ResourceWithConfigure = &Resource{
@@ -258,6 +257,6 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	tflog.Info(ctx, "Importing encrypted value resource", map[string]any{
 		"id": req.ID,
 	})
-	
+
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
