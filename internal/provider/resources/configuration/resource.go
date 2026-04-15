@@ -6,8 +6,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
@@ -24,7 +24,7 @@ import (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.ResourceWithImportState = &Resource{}
-	_ resource.Resource = &Resource{
+	_ resource.Resource                = &Resource{
 		base:   abstraction.BaseResource[ConfigModel, *keboola.ConfigWithRows]{},
 		client: nil,
 		isTest: false,
@@ -491,7 +491,16 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		// Format: component_id/configuration_id (use default branch)
 		componentID = parts[0]
 		configID = parts[1]
-		// branchID will be set by provider default
+		// Fetch default branch so Read can succeed
+		branch, err := r.client.GetDefaultBranchRequest().Send(ctx)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Failed to Get Default Branch",
+				fmt.Sprintf("Could not get default branch: %v", err),
+			)
+			return
+		}
+		branchID = fmt.Sprintf("%d", branch.ID)
 	case 3:
 		// Format: branch_id/component_id/configuration_id
 		branchID = parts[0]

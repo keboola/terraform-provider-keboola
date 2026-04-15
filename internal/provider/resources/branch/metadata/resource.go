@@ -19,7 +19,7 @@ import (
 // Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.ResourceWithImportState = &Resource{}
-	_ resource.Resource = &Resource{
+	_ resource.Resource                = &Resource{
 		base: abstraction.BaseResource[Model, *keboola.MetadataDetail]{}, client: nil, projectID: 0,
 	}
 )
@@ -239,12 +239,53 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 	branchID := parts[0]
 	metadataKey := parts[1]
 
-	// Set the parsed values in state
+	// Resolve the metadata ID by listing branch metadata
+	parsedBranchID, err := strconv.ParseInt(branchID, 10, 64)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Branch ID",
+			fmt.Sprintf("Failed to parse branch_id %q: %v", branchID, err),
+		)
+		return
+	}
+
+	branchKey := keboola.BranchKey{
+		ID: keboola.BranchID(parsedBranchID),
+	}
+
+	result, err := r.client.ListBranchMetadataRequest(branchKey).Send(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to Load Branch Metadata",
+			fmt.Sprintf("Unable to list metadata for branch %q: %v", branchID, err),
+		)
+		return
+	}
+
+	var metadataID string
+	for _, metadataDetail := range *result {
+		if metadataDetail.Key == metadataKey {
+			metadataID = metadataDetail.ID
+			break
+		}
+	}
+
+	if metadataID == "" {
+		resp.Diagnostics.AddError(
+			"Metadata Not Found",
+			fmt.Sprintf("No metadata with key %q was found in branch %q", metadataKey, branchID),
+		)
+		return
+	}
+
+	// Set the parsed and resolved values in state
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("branch_id"), branchID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("key"), metadataKey)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), metadataID)...)
 
 	tflog.Info(ctx, "Parsed import ID", map[string]any{
 		"branch_id": branchID,
 		"key":       metadataKey,
+		"id":        metadataID,
 	})
 }

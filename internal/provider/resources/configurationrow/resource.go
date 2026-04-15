@@ -414,6 +414,16 @@ func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequ
 		componentID = parts[0]
 		configID = parts[1]
 		rowID = parts[2]
+		// Fetch default branch so Read can succeed
+		branch, err := r.client.GetDefaultBranchRequest().Send(ctx)
+		if err != nil {
+			resp.Diagnostics.AddError(
+				"Failed to Get Default Branch",
+				fmt.Sprintf("Could not get default branch: %v", err),
+			)
+			return
+		}
+		branchID = fmt.Sprintf("%d", branch.ID)
 	case 4:
 		// Format: branch_id/component_id/configuration_id/row_id
 		branchID = parts[0]

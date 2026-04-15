@@ -237,8 +237,8 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 	})
 }
 
-// ImportState imports an existing scheduler resource by compound ID.
-// The import ID should be in format "component_id/configuration_id/scheduler_id".
+// ImportState imports an existing scheduler resource by ID.
+// The import ID should be the scheduler ID (e.g., "12345").
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	tflog.Info(ctx, "Importing scheduler resource", map[string]any{
 		"id": req.ID,
