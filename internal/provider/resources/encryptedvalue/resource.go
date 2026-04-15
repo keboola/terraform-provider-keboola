@@ -256,9 +256,8 @@ func (r *Resource) Delete(ctx context.Context, _ resource.DeleteRequest, _ *reso
 // Since this resource is stateless (no Read), import populates encrypted_value
 // directly from the import ID and sets id to "none" to match normal Create behaviour.
 func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	tflog.Info(ctx, "Importing encrypted value resource", map[string]any{
-		"id": req.ID,
-	})
+	// Do not log req.ID — it is the encrypted value itself and must not appear in logs.
+	tflog.Info(ctx, "Importing encrypted value resource")
 
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("encrypted_value"), req.ID)...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), "none")...)

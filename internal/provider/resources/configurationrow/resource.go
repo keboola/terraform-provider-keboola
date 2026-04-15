@@ -23,6 +23,13 @@ import (
 	"github.com/keboola/terraform-provider-keboola/internal/providermodels"
 )
 
+// Ensure the implementation satisfies the expected interfaces.
+var (
+	_ resource.Resource                = &Resource{}
+	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.ResourceWithConfigure   = &Resource{}
+)
+
 // Resource implements the configuration row resource for Terraform.
 type Resource struct {
 	base   abstraction.BaseResource[Model, *keboola.ConfigRow]
@@ -177,8 +184,7 @@ func (r *Resource) Configure(_ context.Context, req resource.ConfigureRequest, _
 
 // Static error variables for consistent error handling.
 var (
-	_                                resource.ResourceWithImportState = &Resource{}
-	errInvalidConfigurationFQNFormat                                  = errors.New(
+	errInvalidConfigurationFQNFormat = errors.New(
 		"invalid configuration_fqn format, expected branch_id/component_id/configuration_id",
 	)
 	errMissingIdentifiers = errors.New(

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	"github.com/keboola/terraform-provider-keboola/internal/test"
 )
@@ -60,6 +61,22 @@ func TestAccBranchMetadataResource(t *testing.T) {
 					resource.TestCheckResourceAttrSet("keboola_branch_metadata.description", "key"),
 					resource.TestCheckResourceAttrSet("keboola_branch_metadata.description", "value"),
 				),
+			},
+			// ImportState testing — import ID is branch_id/metadata_key
+			{
+				ResourceName:      "keboola_branch_metadata.description",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["keboola_branch_metadata.description"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return fmt.Sprintf("%s/%s",
+						rs.Primary.Attributes["branch_id"],
+						rs.Primary.Attributes["key"],
+					), nil
+				},
 			},
 			// Attempt to update the branch metadata
 			{
