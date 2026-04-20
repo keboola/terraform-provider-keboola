@@ -3,7 +3,9 @@ package branch
 import (
 	"context"
 	"fmt"
+	"strconv"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -19,6 +21,7 @@ var (
 	_ resource.Resource = &Resource{
 		base: abstraction.BaseResource[Model, *keboola.Branch]{}, client: nil, projectID: 0,
 	}
+	_ resource.ResourceWithImportState = &Resource{}
 )
 
 // Resource is the branch resource implementation.
@@ -186,4 +189,23 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 		return nil
 	})
+}
+
+// ImportState imports an existing branch resource by ID.
+// The import ID should be the numeric branch ID (e.g., "12345").
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing branch resource", map[string]any{
+		"id": req.ID,
+	})
+
+	branchID, err := strconv.ParseInt(req.ID, 10, 64)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID",
+			fmt.Sprintf("Expected a numeric branch ID, got %q: %v", req.ID, err),
+		)
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), branchID)...)
 }

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
 
 	"github.com/keboola/terraform-provider-keboola/internal/test"
 )
@@ -28,6 +29,22 @@ func TestAccEncryptedValueResource(t *testing.T) {
 					resource.TestCheckResourceAttr("keboola_encrypted_value.test", "id", "none"),
 					resource.TestCheckResourceAttr("keboola_encrypted_value.test", "component_id", "ex-generic-v2"),
 				),
+			},
+			// ImportState testing — import ID is the encrypted value itself
+			{
+				ResourceName:      "keboola_encrypted_value.test",
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources["keboola_encrypted_value.test"]
+					if !ok {
+						return "", fmt.Errorf("resource not found")
+					}
+					return rs.Primary.Attributes["encrypted_value"], nil
+				},
+				// value/component_id/config_id/branch_type are not restored during import
+				// because this resource is stateless and has no Read implementation.
+				ImportStateVerifyIgnore: []string{"value", "component_id", "config_id", "branch_type"},
 			},
 			// Update and Read testing
 			{

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -24,7 +25,8 @@ var (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource = &Resource{
+	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                = &Resource{
 		base: abstraction.BaseResource[Model, *EncryptResponse]{}, client: nil, projectID: 0,
 	}
 	_ resource.ResourceWithConfigure = &Resource{
@@ -247,4 +249,16 @@ func (r *Resource) Delete(ctx context.Context, _ resource.DeleteRequest, _ *reso
 	// For stateless resources, no API call is needed and no error should be returned.
 	// This is a no-op. Terraform will remove the state automatically.
 	// Do not return an error, otherwise Terraform will treat the resource as broken.
+}
+
+// ImportState imports an existing encrypted value resource.
+// The import ID should be the encrypted value string itself.
+// Since this resource is stateless (no Read), import populates encrypted_value
+// directly from the import ID and sets id to "none" to match normal Create behaviour.
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	// Do not log req.ID — it is the encrypted value itself and must not appear in logs.
+	tflog.Info(ctx, "Importing encrypted value resource")
+
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("encrypted_value"), req.ID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), "none")...)
 }

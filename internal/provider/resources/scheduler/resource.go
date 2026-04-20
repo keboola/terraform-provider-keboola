@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -22,7 +23,8 @@ var ErrConfigIDRequired = errors.New("config_id is required for scheduler creati
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource = &Resource{
+	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                = &Resource{
 		base:   abstraction.BaseResource[Model, *keboola.Schedule]{},
 		client: nil,
 		isTest: false,
@@ -233,4 +235,14 @@ func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp 
 
 		return nil
 	})
+}
+
+// ImportState imports an existing scheduler resource by ID.
+// The import ID should be the scheduler ID (e.g., "12345").
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing scheduler resource", map[string]any{
+		"id": req.ID,
+	})
+
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 
 	test "github.com/keboola/terraform-provider-keboola/internal/test"
 )
@@ -138,6 +139,25 @@ func TestAccConfigurationRowResource_CRUD(t *testing.T) { //nolint:paralleltest
 					resource.TestCheckResourceAttrSet(resourceName, "branch_id"),
 					resource.TestCheckResourceAttrSet(resourceName, "component_id"),
 				),
+			},
+			// ImportState testing
+			{
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					rs, ok := s.RootModule().Resources[resourceName]
+					if !ok {
+						return "", fmt.Errorf("resource not found: %s", resourceName)
+					}
+					// Import format: branch_id/component_id/configuration_id/row_id
+					return fmt.Sprintf("%s/%s/%s/%s",
+						rs.Primary.Attributes["branch_id"],
+						rs.Primary.Attributes["component_id"],
+						rs.Primary.Attributes["configuration_id"],
+						rs.Primary.Attributes["id"],
+					), nil
+				},
 			},
 			{
 				Config: configUpdate,

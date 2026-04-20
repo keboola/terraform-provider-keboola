@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -16,7 +18,8 @@ import (
 
 // Ensure the implementation satisfies the expected interfaces.
 var (
-	_ resource.Resource = &Resource{
+	_ resource.ResourceWithImportState = &Resource{}
+	_ resource.Resource                = &Resource{
 		base: abstraction.BaseResource[Model, *keboola.MetadataDetail]{}, client: nil, projectID: 0,
 	}
 )
@@ -213,4 +216,76 @@ func (r *Resource) updateMetadata(ctx context.Context, model Model) (*keboola.Me
 		Key:   model.Key.ValueString(),
 		Value: model.Value.ValueString(),
 	}, nil
+}
+
+// ImportState imports an existing branch metadata resource by compound ID.
+// The import ID should be in format "branch_id/metadata_key" (e.g., "12345/KBC.createdBy").
+func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Info(ctx, "Importing branch metadata resource", map[string]any{
+		"import_id": req.ID,
+	})
+
+	// Parse the import ID
+	parts := strings.Split(req.ID, "/")
+
+	if len(parts) != 2 {
+		resp.Diagnostics.AddError(
+			"Invalid Import ID Format",
+			fmt.Sprintf("Expected import ID format: 'branch_id/metadata_key', got: %s", req.ID),
+		)
+		return
+	}
+
+	branchID := parts[0]
+	metadataKey := parts[1]
+
+	// Resolve the metadata ID by listing branch metadata
+	parsedBranchID, err := strconv.ParseInt(branchID, 10, 64)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Invalid Branch ID",
+			fmt.Sprintf("Failed to parse branch_id %q: %v", branchID, err),
+		)
+		return
+	}
+
+	branchKey := keboola.BranchKey{
+		ID: keboola.BranchID(parsedBranchID),
+	}
+
+	result, err := r.client.ListBranchMetadataRequest(branchKey).Send(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError(
+			"Failed to Load Branch Metadata",
+			fmt.Sprintf("Unable to list metadata for branch %q: %v", branchID, err),
+		)
+		return
+	}
+
+	var metadataID string
+	for _, metadataDetail := range *result {
+		if metadataDetail.Key == metadataKey {
+			metadataID = metadataDetail.ID
+			break
+		}
+	}
+
+	if metadataID == "" {
+		resp.Diagnostics.AddError(
+			"Metadata Not Found",
+			fmt.Sprintf("No metadata with key %q was found in branch %q", metadataKey, branchID),
+		)
+		return
+	}
+
+	// Set the parsed and resolved values in state
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("branch_id"), branchID)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("key"), metadataKey)...)
+	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), metadataID)...)
+
+	tflog.Info(ctx, "Parsed import ID", map[string]any{
+		"branch_id": branchID,
+		"key":       metadataKey,
+		"id":        metadataID,
+	})
 }
